@@ -1,0 +1,32 @@
+{
+  "name": "piper-tts-node",
+  "version": "1.0.0",
+  "description": "TypeScript wrapper for PiperTTS with bundled binaries for Windows and Linux",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist/**/*",
+    "bin/**/*",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "lint": "eslint src/**/*.ts",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "piper",
+    "tts",
+    "text-to-speech",
+    "speech-synthesis"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0",
+    "@types/bun": "latest"
+  },
+  "private": true
+}
