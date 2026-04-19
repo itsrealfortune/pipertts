@@ -7,7 +7,8 @@ Lightweight TypeScript wrapper around [Piper](https://github.com/rhasspy/piper) 
 ## What you get
 
 - Typed API (`PiperTTS`, `PiperInferenceOptions`, `SynthesisResult`)
-- Cross-platform binary resolution for:
+- Uses `python3 -m piper` as the default runtime command
+- Cross-platform support for:
   - Linux x64
   - Linux arm64
   - Windows x64
@@ -16,13 +17,13 @@ Lightweight TypeScript wrapper around [Piper](https://github.com/rhasspy/piper) 
 
 ## Platform support
 
-| OS | Architecture | Auto-detected binary path |
+| OS | Architecture | Requirement |
 |---|---|---|
-| Linux | x64 | `bin/linux-x64/piper` |
-| Linux | arm64 | `bin/linux-arm64/piper` |
-| Windows | x64 | `bin/win32-x64/piper.exe` |
+| Linux | x64 | `python3` (or `python`) + Piper Python module |
+| Linux | arm64 | `python3` (or `python`) + Piper Python module |
+| Windows | x64 | `python3` (or `python`) + Piper Python module |
 
-If you need a custom location, pass `piperBinaryPath` to `PiperTTS.create(...)`.
+If you prefer not to use `PATH`, pass `piperBinaryPath` to `PiperTTS.create(...)`.
 
 ## Install
 
@@ -34,26 +35,14 @@ npm install pipertts
 
 `pipertts` does not ship Piper voice models.
 
-By default, `npm install pipertts` runs a `postinstall` step that downloads the matching Piper binary for your current platform and stores it under `bin/<platform-arch>/`.
+This package also does not download or bundle the Piper executable.
 
 1. Download a `.onnx` model (and its `.onnx.json`) from the Piper project.
-2. Keep the auto-downloaded binary, or place your own binary manually in the same target path.
-
-Expected layout:
-
-```text
-node_modules/pipertts/bin/
-  linux-x64/piper
-  linux-arm64/piper
-  win32-x64/piper.exe
-```
+2. Install Python and the Piper module locally.
+3. Verify `python3 -m piper --help` works (or `python -m piper --help`).
+4. Optional: pass `piperBinaryPath` in code if you want to use a custom executable.
 
 Piper releases: <https://github.com/rhasspy/piper/releases>
-
-Postinstall controls:
-
-- `PIPERTTS_SKIP_POSTINSTALL=1`: skip binary download.
-- `PIPERTTS_PIPER_VERSION=vX.Y.Z`: pin a specific Piper release tag instead of latest.
 
 ## Quick start
 
@@ -119,7 +108,7 @@ Creates an instance, resolves the binary path, validates the model path, and run
 | Option | Type | Required | Default |
 |---|---|---|---|
 | `modelPath` | `string` | yes | - |
-| `piperBinaryPath` | `string` | no | auto-detected from `bin/` |
+| `piperBinaryPath` | `string` | no | `python3 -m piper` (fallback: `python -m piper`) |
 | `warmUpText` | `string` | no | `"Hello, this is a warm-up test."` |
 | `defaultOptions` | `Omit<PiperInferenceOptions, "modelPath">` | no | `{}` |
 
@@ -173,7 +162,8 @@ await tts.synthesizeToFile("Write to file", "./output.wav", {
 ## Common failures
 
 - `model file not found`: verify `modelPath` is correct.
-- `bundled binary not found`: verify binary exists in the expected `bin/<platform>-<arch>/` path.
+- `Python not found in PATH`: install Python 3 and verify `python3 --version`.
+- `No module named piper`: install Piper Python module and verify `python3 -m piper --help`.
 - Process exits with code non-zero: inspect stderr in the thrown error for missing model/config or unsupported flags.
 
 ## Version compatibility

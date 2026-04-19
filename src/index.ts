@@ -1,7 +1,7 @@
-import { spawn, type SpawnOptions } from "child_process";
-import * as fs from "fs";
-import * as path from "path";
-import * as os from "os";
+import { type SpawnOptions, spawn } from "node:child_process";
+import * as fs from "node:fs";
+import * as os from "node:os";
+import * as path from "node:path";
 
 // ---------------------------------------------------------------------------
 // Types & Interfaces
@@ -133,8 +133,10 @@ export interface PiperTTSOptions {
 	modelPath: string;
 
 	/**
-	 * Optional explicit path to the Piper binary.
-	 * When omitted the bundled binary for the current platform is used.
+	 * Optional explicit executable path or command name.
+	 * When omitted, `python3 -m piper` is used (fallback: `python -m piper`).
+	 *
+	 * Examples: `/usr/bin/piper`, `C:\\tools\\piper.exe`, `python3`.
 	 */
 	piperBinaryPath?: string;
 
@@ -169,64 +171,68 @@ export interface SynthesisResult {
 // Internal helpers
 // ---------------------------------------------------------------------------
 
+function resolveBinaryFromPath(binaryName: string): string | null {
+	const pathEnv = process.env.PATH ?? "";
+	const pathDirs = pathEnv.split(path.delimiter).filter(Boolean);
+
+	for (const dir of pathDirs) {
+		const candidate = path.join(dir, binaryName);
+		if (fs.existsSync(candidate)) {
+			return candidate;
+		}
+	}
+
+	return null;
+}
+
+function resolveExecutable(commandOrPath: string): string {
+	const hasPathSeparator =
+		commandOrPath.includes(path.sep) ||
+		(path.sep === "\\" && commandOrPath.includes("/"));
+
+	if (hasPathSeparator || path.isAbsolute(commandOrPath)) {
+		const resolved = path.resolve(commandOrPath);
+		if (!fs.existsSync(resolved)) {
+			throw new Error(`PiperTTS: executable not found at "${resolved}".`);
+		}
+		return resolved;
+	}
+
+	const fromPath = resolveBinaryFromPath(commandOrPath);
+	if (!fromPath) {
+		throw new Error(
+			`PiperTTS: executable "${commandOrPath}" not found in PATH.`,
+		);
+	}
+
+	return fromPath;
+}
+
 /**
- * Returns the absolute path to the bundled Piper binary for the current
- * platform/architecture.
+ * Resolves the default command used to run Piper as a Python module.
  *
- * Expected layout inside the package:
- * ```
- * bin/
- *   linux-x64/piper
- *   linux-arm64/piper
- *   win32-x64/piper.exe
- * ```
+ * Preferred command is `python3 -m piper`, with `python -m piper` fallback.
  *
- * @throws {Error} When the current platform is not supported.
+ * @throws {Error} When Python is not available in PATH.
  * @internal
  */
-function resolveBundledBinary(): string {
-	const platform = os.platform(); // "linux" | "win32" | "darwin" …
-	const arch = os.arch(); // "x64" | "arm64" …
+function resolveSystemCommand(): {
+	command: string;
+	commandPrefixArgs: string[];
+} {
+	const pythonCmd =
+		resolveBinaryFromPath("python3") || resolveBinaryFromPath("python");
 
-	const dirMap: Record<string, Record<string, string>> = {
-		linux: {
-			x64: "linux-x64",
-			arm64: "linux-arm64",
-		},
-		win32: {
-			x64: "win32-x64",
-		},
+	if (!pythonCmd) {
+		throw new Error(
+			'PiperTTS: Python not found in PATH. Install Python and the Piper module, or pass "piperBinaryPath" explicitly.',
+		);
+	}
+
+	return {
+		command: pythonCmd,
+		commandPrefixArgs: ["-m", "piper"],
 	};
-
-	const platformDirs = dirMap[platform];
-	if (!platformDirs) {
-		throw new Error(
-			`PiperTTS: unsupported platform "${platform}". ` +
-				`Supported platforms: linux (x64, arm64), win32 (x64).`,
-		);
-	}
-
-	const dirName = platformDirs[arch];
-	if (!dirName) {
-		throw new Error(
-			`PiperTTS: unsupported architecture "${arch}" on platform "${platform}".`,
-		);
-	}
-
-	const binaryName = platform === "win32" ? "piper.exe" : "piper";
-
-	// __dirname points to dist/ at runtime; bin/ is at the package root.
-	const packageRoot = path.resolve(__dirname, "..");
-	const binaryPath = path.join(packageRoot, "bin", dirName, binaryName);
-
-	if (!fs.existsSync(binaryPath)) {
-		throw new Error(
-			`PiperTTS: bundled binary not found at "${binaryPath}". ` +
-				`Please place the Piper binary for "${platform}-${arch}" in that location.`,
-		);
-	}
-
-	return binaryPath;
 }
 
 /**
@@ -311,8 +317,8 @@ function buildArgs(
  *
  * ## Quick start
  * ```typescript
- * import { PiperTTS } from "piper-tts-node";
- * import * as fs from "fs";
+ * import { PiperTTS } from "pipertts";
+ * import * as fs from "node:fs";
  *
  * const tts = await PiperTTS.create({
  *   modelPath: "./models/en_US-lessac-medium.onnx",
@@ -323,7 +329,8 @@ function buildArgs(
  * ```
  *
  * ## Notes
- * - Place your Piper binaries under `bin/<platform>-<arch>/piper[.exe]`.
+ * - Install Piper as a Python module and ensure `python3 -m piper`
+ *   works in your shell (or pass `piperBinaryPath` explicitly).
  * - Models are **not** bundled; download them from the Piper releases page.
  * - The constructor is private – always use the static {@link PiperTTS.create}
  *   factory so that async model validation is awaited properly.
@@ -331,6 +338,9 @@ function buildArgs(
 export class PiperTTS {
 	/** Resolved path to the Piper CLI binary. */
 	private readonly binaryPath: string;
+
+	/** Prefix args injected before Piper CLI args (for example: `-m piper`). */
+	private readonly commandPrefixArgs: string[];
 
 	/** Resolved path to the default `.onnx` model. */
 	private readonly modelPath: string;
@@ -341,10 +351,12 @@ export class PiperTTS {
 	// Private constructor – use PiperTTS.create()
 	private constructor(
 		binaryPath: string,
+		commandPrefixArgs: string[],
 		modelPath: string,
 		defaultOptions: PiperInferenceOptions,
 	) {
 		this.binaryPath = binaryPath;
+		this.commandPrefixArgs = commandPrefixArgs;
 		this.modelPath = modelPath;
 		this.defaultOptions = defaultOptions;
 	}
@@ -386,22 +398,31 @@ export class PiperTTS {
 			throw new Error(`PiperTTS: model file not found at "${resolvedModel}".`);
 		}
 
-		// Resolve binary
-		const resolvedBinary = piperBinaryPath
-			? path.resolve(piperBinaryPath)
-			: resolveBundledBinary();
+		// Resolve command
+		let resolvedBinary: string;
+		let commandPrefixArgs: string[];
 
-		if (!fs.existsSync(resolvedBinary)) {
-			throw new Error(`PiperTTS: binary not found at "${resolvedBinary}".`);
+		if (piperBinaryPath) {
+			resolvedBinary = resolveExecutable(piperBinaryPath);
+			commandPrefixArgs = [];
+		} else {
+			const systemCommand = resolveSystemCommand();
+			resolvedBinary = systemCommand.command;
+			commandPrefixArgs = systemCommand.commandPrefixArgs;
 		}
 
-		// Ensure the binary is executable (Linux/macOS)
-		if (os.platform() !== "win32") {
+		if (!fs.existsSync(resolvedBinary)) {
+			throw new Error(`PiperTTS: executable not found at "${resolvedBinary}".`);
+		}
+
+		// Ensure explicit binary paths are executable (Linux/macOS)
+		if (os.platform() !== "win32" && piperBinaryPath) {
 			fs.chmodSync(resolvedBinary, 0o755);
 		}
 
 		const instance = new PiperTTS(
 			resolvedBinary,
+			commandPrefixArgs,
 			resolvedModel,
 			defaultOptions,
 		);
@@ -541,7 +562,7 @@ export class PiperTTS {
 	}
 
 	/**
-	 * Returns the resolved path of the Piper binary in use.
+	 * Returns the resolved executable path used to run Piper.
 	 */
 	getBinaryPath(): string {
 		return this.binaryPath;
@@ -572,7 +593,11 @@ export class PiperTTS {
 				stdio: ["pipe", "pipe", "pipe"],
 			};
 
-			const child = spawn(this.binaryPath, args, spawnOptions);
+			const child = spawn(
+				this.binaryPath,
+				[...this.commandPrefixArgs, ...args],
+				spawnOptions,
+			);
 
 			const stderrChunks: Buffer[] = [];
 

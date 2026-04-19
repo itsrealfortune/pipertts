@@ -1,18 +1,15 @@
 {
 	"name": "pipertts",
 	"version": "1.0.1",
-	"description": "TypeScript wrapper for PiperTTS with bundled binaries for Windows and Linux",
+	"description": "TypeScript wrapper for PiperTTS using python3 -m piper by default",
 	"main": "dist/index.js",
 	"types": "dist/index.d.ts",
 	"files": [
 		"dist/**/*",
-		"bin/**/*",
-		"scripts/postinstall.mjs",
 		"README.md"
 	],
 	"type": "module",
 	"scripts": {
-		"postinstall": "node ./scripts/postinstall.mjs",
 		"build:watch": "tsc --watch",
 		"typecheck": "tsc --noEmit",
 		"example": "ts-node --esm examples/example.ts",
