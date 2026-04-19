@@ -1,10 +1,10 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import {
-    getPiperModelMetadata,
-    getPiperModelsByLanguage,
-    listPiperModels,
-    PiperTTS,
+	getPiperModelMetadata,
+	getPiperModelsByLanguage,
+	listPiperModels,
+	PiperTTS,
 } from "../src/index.ts";
 
 async function main(): Promise<void> {
@@ -27,15 +27,15 @@ async function main(): Promise<void> {
 	const createOptions =
 		selectedModel === "custom"
 			? {
-				model: "custom" as const,
-				modelPath: path.resolve(
-					process.env.PIPER_MODEL_PATH ?? "models/example.onnx",
-				),
-			}
+					model: "custom" as const,
+					modelPath: path.resolve(
+						process.env.PIPER_MODEL_PATH ?? "models/example.onnx",
+					),
+				}
 			: {
-				model: selectedModel,
-				modelsDir: "models",
-			};
+					model: selectedModel,
+					modelsDir: "models",
+				};
 
 	const tts = await PiperTTS.create({
 		...createOptions,
@@ -46,7 +46,7 @@ async function main(): Promise<void> {
 	});
 
 	const result = await tts.synthesize(
-        "Hello, this is a test generated from example.ts.",
+		"Hello, this is a test generated from example.ts.",
 	);
 	fs.writeFileSync(outputPath, result.audio);
 
