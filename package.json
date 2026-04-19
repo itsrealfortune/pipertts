@@ -1,6 +1,6 @@
 {
 	"name": "pipertts",
-	"version": "1.0.2",
+	"version": "1.0.3",
 	"description": "TypeScript wrapper for PiperTTS using python3 -m piper by default",
 	"main": "dist/index.js",
 	"types": "dist/index.d.ts",
