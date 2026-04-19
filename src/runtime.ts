@@ -15,6 +15,9 @@ function resolveBinaryFromPath(binaryName: string): string | null {
 	return null;
 }
 
+/**
+ * Resolves an executable from an explicit path or from PATH.
+ */
 export function resolveExecutable(commandOrPath: string): string {
 	const hasPathSeparator =
 		commandOrPath.includes(path.sep) ||
@@ -38,6 +41,12 @@ export function resolveExecutable(commandOrPath: string): string {
 	return fromPath;
 }
 
+/**
+ * Resolves the default Piper command.
+ *
+ * Preferred: `python3 -m piper`
+ * Fallback: `python -m piper`
+ */
 export function resolveSystemCommand(): {
 	command: string;
 	commandPrefixArgs: string[];

@@ -118,11 +118,27 @@ async function ensureCatalogModelDownloaded(
 	return targetModelPath;
 }
 
+/**
+ * Lists all catalog model ids from the Piper voices manifest.
+ *
+ * @returns Sorted model ids plus the special `"custom"` entry.
+ */
 export async function listPiperModels(): Promise<string[]> {
 	const manifest = await fetchVoicesManifest();
 	return [...Object.keys(manifest).sort(), PIPER_CUSTOM_MODEL];
 }
 
+/**
+ * Returns catalog model ids filtered by language.
+ *
+ * Matching rules:
+ * - exact code match (example: `en_US`)
+ * - family prefix match (example: `en` matches `en_US`, `en_GB`, ...)
+ *
+ * @param languageCode - Exact locale (`en_US`) or family prefix (`en`).
+ * @returns Sorted catalog model ids matching the requested language.
+ * @throws {Error} When `languageCode` is empty.
+ */
 export async function getPiperModelsByLanguage(
 	languageCode: string,
 ): Promise<string[]> {
@@ -146,6 +162,14 @@ export async function getPiperModelsByLanguage(
 		.sort();
 }
 
+/**
+ * Returns metadata for a catalog model id or alias.
+ * Returns `null` for `"custom"`.
+ *
+ * @param modelId - Catalog id, alias, or `"custom"`.
+ * @returns Model metadata, or `null` for `"custom"`.
+ * @throws {Error} When the model id is unknown.
+ */
 export async function getPiperModelMetadata(
 	modelId: string,
 ): Promise<PiperModelMetadata | null> {
@@ -174,6 +198,16 @@ export async function getPiperModelMetadata(
 	};
 }
 
+/**
+ * Resolves a usable local model path from `PiperTTSOptions`.
+ *
+ * - Catalog model id: ensures `.onnx` and `.onnx.json` are downloaded.
+ * - `custom`/unset model: uses `modelPath`.
+ *
+ * @param options - Creation options passed to `PiperTTS.create`.
+ * @returns Absolute path to a local `.onnx` model file.
+ * @throws {Error} When options are invalid or model resolution fails.
+ */
 export async function resolveModelPathFromOptions(
 	options: PiperTTSOptions,
 ): Promise<string> {

@@ -59,6 +59,9 @@ function buildArgs(
 	return args;
 }
 
+/**
+ * High-level TypeScript wrapper around the Piper CLI.
+ */
 export class PiperTTS {
 	private readonly binaryPath: string;
 	private readonly commandPrefixArgs: string[];
@@ -77,6 +80,9 @@ export class PiperTTS {
 		this.defaultOptions = defaultOptions;
 	}
 
+	/**
+	 * Creates a new instance and performs a warm-up inference to validate setup.
+	 */
 	static async create(options: PiperTTSOptions): Promise<PiperTTS> {
 		const {
 			piperBinaryPath,
@@ -120,6 +126,9 @@ export class PiperTTS {
 		return instance;
 	}
 
+	/**
+	 * Synthesizes speech for the given text and returns audio as `Buffer`.
+	 */
 	async synthesize(
 		text: string,
 		callOptions: PiperInferenceOptions = {},
@@ -173,6 +182,9 @@ export class PiperTTS {
 		};
 	}
 
+	/**
+	 * Convenience helper that synthesizes directly to a file.
+	 */
 	async synthesizeToFile(
 		text: string,
 		outputPath: string,
@@ -181,14 +193,17 @@ export class PiperTTS {
 		await this.synthesize(text, { ...options, outputFile: outputPath });
 	}
 
+	/** Returns the resolved model path used by this instance. */
 	getModelPath(): string {
 		return this.modelPath;
 	}
 
+	/** Returns the resolved executable path used to run Piper. */
 	getBinaryPath(): string {
 		return this.binaryPath;
 	}
 
+	/** Returns a copy of default inference options. */
 	getDefaultOptions(): Readonly<PiperInferenceOptions> {
 		return { ...this.defaultOptions };
 	}
