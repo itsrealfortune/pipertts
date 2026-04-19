@@ -1,133 +1,191 @@
-# piper-tts-node
+# pipertts
 
-TypeScript wrapper for [PiperTTS](https://github.com/rhasspy/piper) — fast, local, neural text-to-speech.
+Lightweight TypeScript wrapper around [Piper](https://github.com/rhasspy/piper) for local, offline text-to-speech.
 
-## Features
+`pipertts` handles process spawning, option mapping, and file/buffer output so you can use Piper from Node.js with a typed API.
 
-- 🎙️ Full TypeScript API with JSDoc
-- 📦 Bundled binary support (Windows x64 & Linux x64/arm64)
-- 🔥 Warm-up inference on load to validate the model
-- 🎛️ All PiperTTS inference parameters exposed
-- 💾 Synthesize to `Buffer` or directly to a file
+## What you get
 
----
+- Typed API (`PiperTTS`, `PiperInferenceOptions`, `SynthesisResult`)
+- Cross-platform binary resolution for:
+  - Linux x64
+  - Linux arm64
+  - Windows x64
+- Startup warm-up inference to fail fast if model/binary is invalid
+- Audio output as `Buffer` or direct file write
 
-## Installation
+## Platform support
+
+| OS | Architecture | Auto-detected binary path |
+|---|---|---|
+| Linux | x64 | `bin/linux-x64/piper` |
+| Linux | arm64 | `bin/linux-arm64/piper` |
+| Windows | x64 | `bin/win32-x64/piper.exe` |
+
+If you need a custom location, pass `piperBinaryPath` to `PiperTTS.create(...)`.
+
+## Install
 
 ```bash
-npm install piper-tts-node
+npm install pipertts
 ```
 
----
+## Required setup
 
-## Binary setup
+`pipertts` does not ship Piper voice models.
 
-You must place the Piper binary for your target platform under the `bin/` directory of this package **before** using it:
+1. Download a `.onnx` model (and its `.onnx.json`) from the Piper project.
+2. Place the platform binary in this package's `bin` folder.
 
+Expected layout:
+
+```text
+node_modules/pipertts/bin/
+  linux-x64/piper
+  linux-arm64/piper
+  win32-x64/piper.exe
 ```
-node_modules/piper-tts-node/bin/
-  linux-x64/piper          ← Linux 64-bit
-  linux-arm64/piper        ← Linux ARM64
-  win32-x64/piper.exe      ← Windows 64-bit
-```
 
-Download the appropriate release from the [Piper releases page](https://github.com/rhasspy/piper/releases).
-
----
+Piper releases: <https://github.com/rhasspy/piper/releases>
 
 ## Quick start
 
-```typescript
-import { PiperTTS } from "piper-tts-node";
-import * as fs from "fs";
+```ts
+import { PiperTTS } from "pipertts";
+import * as fs from "node:fs";
 
 async function main() {
-  // Create instance – performs a warm-up inference to validate the model
   const tts = await PiperTTS.create({
     modelPath: "./models/en_US-lessac-medium.onnx",
+    defaultOptions: {
+      outputFormat: "wav",
+      lengthScale: 0.9,
+    },
   });
 
-  // Synthesize to a buffer
-  const result = await tts.synthesize("Hello, world!");
-  fs.writeFileSync("hello.wav", result.audio);
-  console.log(`Done in ${result.durationMs}ms`);
+  const result = await tts.synthesize("Hello from Piper.");
+  fs.writeFileSync("./hello.wav", result.audio);
+  console.log(`Synthesis took ${result.durationMs}ms`);
 
-  // Synthesize directly to a file
-  await tts.synthesizeToFile("Saving to disk.", "./output.wav");
+  await tts.synthesizeToFile("Saved directly to disk.", "./direct.wav", {
+    speakerId: 0,
+  });
 }
 
 main().catch(console.error);
 ```
 
----
+## Module usage (ESM and CommonJS)
+
+ESM:
+
+```js
+import { PiperTTS } from "pipertts";
+
+const tts = await PiperTTS.create({
+  modelPath: "./models/en_US-lessac-medium.onnx",
+});
+```
+
+CommonJS:
+
+```js
+const { PiperTTS } = require("pipertts");
+
+async function boot() {
+  const tts = await PiperTTS.create({
+    modelPath: "./models/en_US-lessac-medium.onnx",
+  });
+
+  await tts.synthesizeToFile("Hello from CommonJS", "./cjs.wav");
+}
+
+boot().catch(console.error);
+```
 
 ## API
 
 ### `PiperTTS.create(options)`
 
-Static factory that creates and validates a `PiperTTS` instance.
+Creates an instance, resolves the binary path, validates the model path, and runs a warm-up inference.
 
-| Option | Type | Default | Description |
+| Option | Type | Required | Default |
 |---|---|---|---|
-| `modelPath` | `string` | **required** | Path to the `.onnx` model |
-| `piperBinaryPath` | `string` | auto-detected | Override the bundled binary |
-| `warmUpText` | `string` | `"Hello, this is a warm-up test."` | Text used for warm-up inference |
-| `defaultOptions` | `PiperInferenceOptions` | `{}` | Default options for all calls |
-
----
+| `modelPath` | `string` | yes | - |
+| `piperBinaryPath` | `string` | no | auto-detected from `bin/` |
+| `warmUpText` | `string` | no | `"Hello, this is a warm-up test."` |
+| `defaultOptions` | `Omit<PiperInferenceOptions, "modelPath">` | no | `{}` |
 
 ### `tts.synthesize(text, options?)`
 
-Synthesises speech and returns a `SynthesisResult`.
+Synthesizes text and returns:
 
-```typescript
-const result = await tts.synthesize("Fast speech.", {
-  lengthScale: 0.75,     // Speed up
-  noiseScale: 0.4,       // Less variability
-  speakerId: 0,          // Multi-speaker models
+- `audio: Buffer`
+- `durationMs: number`
+- `text: string`
+- `options: PiperInferenceOptions` (effective merged options)
+
+Example:
+
+```ts
+const result = await tts.synthesize("Fast speech", {
+  lengthScale: 0.75,
+  noiseScale: 0.5,
+  speakerId: 1,
 });
-
-// result.audio    → Buffer (WAV by default)
-// result.durationMs → number
-// result.text     → string
-// result.options  → effective PiperInferenceOptions
 ```
-
----
 
 ### `tts.synthesizeToFile(text, outputPath, options?)`
 
-Convenience method – writes audio directly to a file.
+Convenience wrapper around `synthesize` that writes to `outputPath`.
 
-```typescript
-await tts.synthesizeToFile("Save me to disk.", "./out.wav", {
-  lengthScale: 1.2,
+```ts
+await tts.synthesizeToFile("Write to file", "./output.wav", {
+  sentenceSilence: 0.1,
 });
 ```
 
----
+## Inference options
 
-### Inference options
-
-| Option | Type | Default | Description |
+| Option | Type | Default | Notes |
 |---|---|---|---|
-| `outputFile` | `string` | — | Write audio to this path |
-| `outputFormat` | `"raw" \| "wav" \| "mp3" \| "ogg"` | `"wav"` | Output format |
-| `speakerId` | `number` | — | Speaker ID (multi-speaker models) |
-| `noiseScale` | `number` | `0.667` | Audio variability (0–2) |
-| `noiseWScale` | `number` | `0.8` | Duration variability (0–2) |
-| `lengthScale` | `number` | `1.0` | Speed (>1 = slower, <1 = faster) |
-| `sentenceSilence` | `number` | `0.2` | Silence after each sentence (seconds) |
-| `jsonInput` | `boolean` | `false` | Enable phoneme JSON input mode |
-| `numThreads` | `number` | CPU count | ONNX inference thread count |
-| `useCuda` | `boolean` | `false` | Use CUDA GPU acceleration |
-| `logLevel` | `"debug" \| "info" \| "warn" \| "error"` | `"warn"` | Piper log verbosity |
+| `modelPath` | `string` | instance model | Per-call model override |
+| `configPath` | `string` | auto (`<model>.json`) | Explicit model config path |
+| `outputFile` | `string` | temp file | If set, writes directly there |
+| `outputFormat` | `"raw" \| "wav" \| "mp3" \| "ogg"` | `"wav"` | Audio format |
+| `speakerId` | `number` | - | For multi-speaker models |
+| `noiseScale` | `number` | `0.667` | Voice variability |
+| `noiseWScale` | `number` | `0.8` | Timing variability |
+| `lengthScale` | `number` | `1.0` | `>1` slower, `<1` faster |
+| `sentenceSilence` | `number` | `0.2` | Seconds |
+| `jsonInput` | `boolean` | `false` | Enables Piper `--json-input` |
+| `numThreads` | `number` | CPU count | ONNX threads |
+| `useCuda` | `boolean` | `false` | GPU acceleration |
+| `logLevel` | `"debug" \| "info" \| "warn" \| "error"` | `"warn"` | Piper logging verbosity |
 
----
+## Common failures
 
-## Building from source
+- `model file not found`: verify `modelPath` is correct.
+- `bundled binary not found`: verify binary exists in the expected `bin/<platform>-<arch>/` path.
+- Process exits with code non-zero: inspect stderr in the thrown error for missing model/config or unsupported flags.
+
+## Version compatibility
+
+| Component | Supported |
+|---|---|
+| Node.js | 18+ |
+| TypeScript | 5+ |
+| Runtime | Linux x64/arm64, Windows x64 |
+
+Notes:
+
+- This package wraps the Piper CLI and requires an external Piper model file (`.onnx`).
+- Actual CUDA availability depends on your Piper binary build and host GPU setup.
+
+## Development
 
 ```bash
 npm install
 npm run build
+npm run typecheck
 ```

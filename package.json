@@ -1,6 +1,6 @@
 {
   "name": "pipertts",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "TypeScript wrapper for PiperTTS with bundled binaries for Windows and Linux",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -9,6 +9,7 @@
     "bin/**/*",
     "README.md"
   ],
+  "type": "module",
   "scripts": {
     "build:watch": "tsc --watch",
     "typecheck": "tsc --noEmit",
