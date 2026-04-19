@@ -16,13 +16,6 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Cache apt packages (canvas native deps)
-        uses: awalsh128/cache-apt-pkgs-action@v1
-        with:
-          packages: build-essential libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev libpixman-1-dev pkg-config
-          version: 1.0
-
-
       - uses: actions/setup-node@v6
         with:
           node-version: '24'
