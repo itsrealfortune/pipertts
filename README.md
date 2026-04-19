@@ -34,8 +34,10 @@ npm install pipertts
 
 `pipertts` does not ship Piper voice models.
 
+By default, `npm install pipertts` runs a `postinstall` step that downloads the matching Piper binary for your current platform and stores it under `bin/<platform-arch>/`.
+
 1. Download a `.onnx` model (and its `.onnx.json`) from the Piper project.
-2. Place the platform binary in this package's `bin` folder.
+2. Keep the auto-downloaded binary, or place your own binary manually in the same target path.
 
 Expected layout:
 
@@ -47,6 +49,11 @@ node_modules/pipertts/bin/
 ```
 
 Piper releases: <https://github.com/rhasspy/piper/releases>
+
+Postinstall controls:
+
+- `PIPERTTS_SKIP_POSTINSTALL=1`: skip binary download.
+- `PIPERTTS_PIPER_VERSION=vX.Y.Z`: pin a specific Piper release tag instead of latest.
 
 ## Quick start
 

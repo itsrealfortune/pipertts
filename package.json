@@ -7,10 +7,12 @@
   "files": [
     "dist/**/*",
     "bin/**/*",
+    "scripts/postinstall.mjs",
     "README.md"
   ],
   "type": "module",
   "scripts": {
+    "postinstall": "node ./scripts/postinstall.mjs",
     "build:watch": "tsc --watch",
     "typecheck": "tsc --noEmit",
     "example": "ts-node --esm examples/example.ts",
