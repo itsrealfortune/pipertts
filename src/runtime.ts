@@ -17,6 +17,10 @@ function resolveBinaryFromPath(binaryName: string): string | null {
 
 /**
  * Resolves an executable from an explicit path or from PATH.
+ *
+ * @param {string} commandOrPath - Command name (`python3`) or executable path.
+ * @returns {string} Absolute executable path.
+ * @throws {Error} When the executable cannot be resolved.
  */
 export function resolveExecutable(commandOrPath: string): string {
 	const hasPathSeparator =
@@ -46,6 +50,9 @@ export function resolveExecutable(commandOrPath: string): string {
  *
  * Preferred: `python3 -m piper`
  * Fallback: `python -m piper`
+ *
+ * @returns {{ command: string; commandPrefixArgs: string[] }} Command and prefix args used to run Piper.
+ * @throws {Error} When Python is not available in PATH.
  */
 export function resolveSystemCommand(): {
 	command: string;

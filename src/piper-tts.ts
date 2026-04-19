@@ -82,6 +82,10 @@ export class PiperTTS {
 
 	/**
 	 * Creates a new instance and performs a warm-up inference to validate setup.
+	 *
+	 * @param {PiperTTSOptions} options - Instance creation options.
+	 * @returns {Promise<PiperTTS>} A fully initialized `PiperTTS` instance.
+	 * @throws {Error} When model resolution, binary resolution, or warm-up fails.
 	 */
 	static async create(options: PiperTTSOptions): Promise<PiperTTS> {
 		const {
@@ -128,6 +132,11 @@ export class PiperTTS {
 
 	/**
 	 * Synthesizes speech for the given text and returns audio as `Buffer`.
+	 *
+	 * @param {string} text - Input text to synthesize.
+	 * @param {PiperInferenceOptions} callOptions - Optional inference options for this call.
+	 * @returns {Promise<SynthesisResult>} Synthesis result with audio buffer and metadata.
+	 * @throws {Error} When text is empty or Piper exits with a non-zero code.
 	 */
 	async synthesize(
 		text: string,
@@ -184,6 +193,11 @@ export class PiperTTS {
 
 	/**
 	 * Convenience helper that synthesizes directly to a file.
+	 *
+	 * @param {string} text - Input text to synthesize.
+	 * @param {string} outputPath - Destination file path.
+	 * @param {Omit<PiperInferenceOptions, "outputFile">} options - Optional inference options for this call.
+	 * @returns {Promise<void>} Promise resolved when the output file has been written.
 	 */
 	async synthesizeToFile(
 		text: string,
@@ -193,17 +207,29 @@ export class PiperTTS {
 		await this.synthesize(text, { ...options, outputFile: outputPath });
 	}
 
-	/** Returns the resolved model path used by this instance. */
+	/**
+	 * Returns the resolved model path used by this instance.
+	 *
+	 * @returns {string} Absolute model path.
+	 */
 	getModelPath(): string {
 		return this.modelPath;
 	}
 
-	/** Returns the resolved executable path used to run Piper. */
+	/**
+	 * Returns the resolved executable path used to run Piper.
+	 *
+	 * @returns {string} Absolute executable path.
+	 */
 	getBinaryPath(): string {
 		return this.binaryPath;
 	}
 
-	/** Returns a copy of default inference options. */
+	/**
+	 * Returns a copy of default inference options.
+	 *
+	 * @returns {Readonly<PiperInferenceOptions>} Read-only default inference options.
+	 */
 	getDefaultOptions(): Readonly<PiperInferenceOptions> {
 		return { ...this.defaultOptions };
 	}

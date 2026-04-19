@@ -121,7 +121,7 @@ async function ensureCatalogModelDownloaded(
 /**
  * Lists all catalog model ids from the Piper voices manifest.
  *
- * @returns Sorted model ids plus the special `"custom"` entry.
+ * @returns {Promise<string[]>} Sorted model ids plus the special `"custom"` entry.
  */
 export async function listPiperModels(): Promise<string[]> {
 	const manifest = await fetchVoicesManifest();
@@ -135,8 +135,8 @@ export async function listPiperModels(): Promise<string[]> {
  * - exact code match (example: `en_US`)
  * - family prefix match (example: `en` matches `en_US`, `en_GB`, ...)
  *
- * @param languageCode - Exact locale (`en_US`) or family prefix (`en`).
- * @returns Sorted catalog model ids matching the requested language.
+ * @param {string} languageCode - Exact locale (`en_US`) or family prefix (`en`).
+ * @returns {Promise<string[]>} Sorted catalog model ids matching the requested language.
  * @throws {Error} When `languageCode` is empty.
  */
 export async function getPiperModelsByLanguage(
@@ -166,8 +166,8 @@ export async function getPiperModelsByLanguage(
  * Returns metadata for a catalog model id or alias.
  * Returns `null` for `"custom"`.
  *
- * @param modelId - Catalog id, alias, or `"custom"`.
- * @returns Model metadata, or `null` for `"custom"`.
+ * @param {string} modelId - Catalog id, alias, or `"custom"`.
+ * @returns {Promise<PiperModelMetadata | null>} Model metadata, or `null` for `"custom"`.
  * @throws {Error} When the model id is unknown.
  */
 export async function getPiperModelMetadata(
@@ -204,8 +204,8 @@ export async function getPiperModelMetadata(
  * - Catalog model id: ensures `.onnx` and `.onnx.json` are downloaded.
  * - `custom`/unset model: uses `modelPath`.
  *
- * @param options - Creation options passed to `PiperTTS.create`.
- * @returns Absolute path to a local `.onnx` model file.
+ * @param {PiperTTSOptions} options - Creation options passed to `PiperTTS.create`.
+ * @returns {Promise<string>} Absolute path to a local `.onnx` model file.
  * @throws {Error} When options are invalid or model resolution fails.
  */
 export async function resolveModelPathFromOptions(
