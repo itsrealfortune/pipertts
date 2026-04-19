@@ -23,7 +23,7 @@
     "publish-package": "bash ./scripts/publish-package.sh",
     "bench": "rm -rf .benchmark-shells/ && bun benchmark-virtualshell.ts",
     "standalone-build": "bunx esbuild src/standalone.ts --bundle --platform=node --target=node18 --outfile=standalone.js --tree-shaking=true --minify --sourcemap"
-  }
+  },
   "keywords": [
     "piper",
     "tts",
