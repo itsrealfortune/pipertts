@@ -1,6 +1,11 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { listPiperModels, PiperTTS } from "../src/index.ts";
+import {
+    getPiperModelMetadata,
+    getPiperModelsByLanguage,
+    listPiperModels,
+    PiperTTS,
+} from "../src/index.ts";
 
 async function main(): Promise<void> {
 	const outputPath = path.resolve("examples/output.wav");
@@ -8,6 +13,16 @@ async function main(): Promise<void> {
 
 	const availableModels = await listPiperModels();
 	console.log(`Catalog size: ${availableModels.length - 1} models (+ custom)`);
+
+	const enModels = await getPiperModelsByLanguage("en");
+	console.log(`English variants available: ${enModels.length}`);
+
+	if (selectedModel !== "custom") {
+		const metadata = await getPiperModelMetadata(selectedModel);
+		console.log(
+			`Selected model: ${metadata?.key} (${metadata?.languageCode}, ${metadata?.quality})`,
+		);
+	}
 
 	const createOptions =
 		selectedModel === "custom"

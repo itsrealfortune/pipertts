@@ -76,10 +76,22 @@ main().catch(console.error);
 ## Catalog models (Hugging Face) and custom mode
 
 ```ts
-import { PiperTTS, listPiperModels } from "pipertts";
+import {
+  PiperTTS,
+  getPiperModelMetadata,
+  getPiperModelsByLanguage,
+  listPiperModels,
+} from "pipertts";
 
 const models = await listPiperModels();
 console.log(models.slice(0, 5)); // first catalog ids + "custom"
+
+const metadata = await getPiperModelMetadata("en_US-lessac-medium");
+console.log(metadata?.languageCode, metadata?.quality, metadata?.numSpeakers);
+
+const englishModels = await getPiperModelsByLanguage("en");
+const frenchModels = await getPiperModelsByLanguage("fr_FR");
+console.log(englishModels.length, frenchModels.length);
 
 // Auto-downloads model + .json into ./models by default
 const tts = await PiperTTS.create({
@@ -93,6 +105,9 @@ const customTts = await PiperTTS.create({
   modelPath: "./models/my-voice.onnx",
 });
 ```
+
+`getPiperModelMetadata("custom")` returns `null`.
+`getPiperModelsByLanguage("en")` matches all variants like `en_US`, `en_GB`, etc.
 
 ## Module usage (ESM and CommonJS)
 

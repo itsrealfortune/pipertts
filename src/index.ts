@@ -182,8 +182,31 @@ export interface SynthesisResult {
 
 interface PiperVoicesManifestEntry {
 	key: string;
+	name?: string;
+	quality?: string;
+	num_speakers?: number;
+	language?: {
+		code?: string;
+		family?: string;
+		region?: string;
+		name_native?: string;
+		name_english?: string;
+		country_english?: string;
+	};
 	aliases?: string[];
 	files: Record<string, { size_bytes?: number; md5_digest?: string }>;
+}
+
+export interface PiperModelMetadata {
+	key: string;
+	name?: string;
+	quality?: string;
+	numSpeakers?: number;
+	languageCode?: string;
+	languageNameEnglish?: string;
+	languageNameNative?: string;
+	aliases: string[];
+	filePaths: string[];
 }
 
 const PIPER_VOICES_URL =
@@ -240,6 +263,69 @@ async function fetchVoicesManifest(): Promise<
 export async function listPiperModels(): Promise<string[]> {
 	const manifest = await fetchVoicesManifest();
 	return [...Object.keys(manifest).sort(), PIPER_CUSTOM_MODEL];
+}
+
+/**
+ * Returns catalog model ids filtered by language.
+ *
+ * Matching rules:
+ * - exact code match (example: `en_US`)
+ * - language family prefix (example: `en` matches `en_US`, `en_GB`, ...)
+ */
+export async function getPiperModelsByLanguage(
+	languageCode: string,
+): Promise<string[]> {
+	const normalized = languageCode.trim();
+	if (!normalized) {
+		throw new Error("PiperTTS: languageCode must not be empty.");
+	}
+
+	const manifest = await fetchVoicesManifest();
+	const codeLower = normalized.toLowerCase();
+
+	return Object.values(manifest)
+		.filter((entry) => {
+			const entryCode = entry.language?.code?.toLowerCase();
+			if (!entryCode) {
+				return false;
+			}
+
+			return entryCode === codeLower || entryCode.startsWith(`${codeLower}_`);
+		})
+		.map((entry) => entry.key)
+		.sort();
+}
+
+/**
+ * Returns metadata for a catalog model id or alias.
+ * Returns `null` for `"custom"`.
+ */
+export async function getPiperModelMetadata(
+	modelId: string,
+): Promise<PiperModelMetadata | null> {
+	if (modelId === PIPER_CUSTOM_MODEL) {
+		return null;
+	}
+
+	const manifest = await fetchVoicesManifest();
+	const entry = resolveManifestEntry(manifest, modelId);
+	if (!entry) {
+		throw new Error(
+			`PiperTTS: unknown model "${modelId}". Use listPiperModels() to inspect available ids.`,
+		);
+	}
+
+	return {
+		key: entry.key,
+		name: entry.name,
+		quality: entry.quality,
+		numSpeakers: entry.num_speakers,
+		languageCode: entry.language?.code,
+		languageNameEnglish: entry.language?.name_english,
+		languageNameNative: entry.language?.name_native,
+		aliases: entry.aliases ?? [],
+		filePaths: Object.keys(entry.files),
+	};
 }
 
 function resolveManifestEntry(
