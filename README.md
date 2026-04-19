@@ -8,6 +8,8 @@ Lightweight TypeScript wrapper around [Piper](https://github.com/rhasspy/piper) 
 
 - Typed API (`PiperTTS`, `PiperInferenceOptions`, `SynthesisResult`)
 - Uses `python3 -m piper` as the default runtime command
+- Catalog model selection via Hugging Face (`listPiperModels()`)
+- Auto-download of selected catalog model (`.onnx` + `.onnx.json`) into `models/`
 - Cross-platform support for:
   - Linux x64
   - Linux arm64
@@ -71,6 +73,27 @@ async function main() {
 main().catch(console.error);
 ```
 
+## Catalog models (Hugging Face) and custom mode
+
+```ts
+import { PiperTTS, listPiperModels } from "pipertts";
+
+const models = await listPiperModels();
+console.log(models.slice(0, 5)); // first catalog ids + "custom"
+
+// Auto-downloads model + .json into ./models by default
+const tts = await PiperTTS.create({
+  model: "en_US-lessac-medium",
+  modelsDir: "./models",
+});
+
+// For your own local model path:
+const customTts = await PiperTTS.create({
+  model: "custom",
+  modelPath: "./models/my-voice.onnx",
+});
+```
+
 ## Module usage (ESM and CommonJS)
 
 ESM:
@@ -107,7 +130,9 @@ Creates an instance, resolves the binary path, validates the model path, and run
 
 | Option | Type | Required | Default |
 |---|---|---|---|
-| `modelPath` | `string` | yes | - |
+| `model` | `string` | no | - |
+| `modelPath` | `string` | no | required when `model` is `"custom"` or omitted |
+| `modelsDir` | `string` | no | `"models"` |
 | `piperBinaryPath` | `string` | no | `python3 -m piper` (fallback: `python -m piper`) |
 | `warmUpText` | `string` | no | `"Hello, this is a warm-up test."` |
 | `defaultOptions` | `Omit<PiperInferenceOptions, "modelPath">` | no | `{}` |
@@ -162,6 +187,7 @@ await tts.synthesizeToFile("Write to file", "./output.wav", {
 ## Common failures
 
 - `model file not found`: verify `modelPath` is correct.
+- `unknown model "..."`: call `listPiperModels()` and use one of returned ids, or set `model: "custom"`.
 - `Python not found in PATH`: install Python 3 and verify `python3 --version`.
 - `No module named piper`: install Piper Python module and verify `python3 -m piper --help`.
 - Process exits with code non-zero: inspect stderr in the thrown error for missing model/config or unsupported flags.

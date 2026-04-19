@@ -130,7 +130,20 @@ export interface PiperTTSOptions {
 	 * Path to the `.onnx` voice model file to load at construction time.
 	 * A warm-up inference is performed to validate the model.
 	 */
-	modelPath: string;
+	modelPath?: string;
+
+	/**
+	 * Model selector.
+	 * - Use a catalog id (from {@link listPiperModels}) to auto-download to `modelsDir`.
+	 * - Use `"custom"` to force local `modelPath` usage.
+	 */
+	model?: string;
+
+	/**
+	 * Target folder used when downloading catalog models.
+	 * @default "models"
+	 */
+	modelsDir?: string;
 
 	/**
 	 * Optional explicit executable path or command name.
@@ -167,6 +180,20 @@ export interface SynthesisResult {
 	options: PiperInferenceOptions;
 }
 
+interface PiperVoicesManifestEntry {
+	key: string;
+	aliases?: string[];
+	files: Record<string, { size_bytes?: number; md5_digest?: string }>;
+}
+
+const PIPER_VOICES_URL =
+	"https://huggingface.co/rhasspy/piper-voices/resolve/main/voices.json";
+const PIPER_FILES_BASE_URL =
+	"https://huggingface.co/rhasspy/piper-voices/resolve/main";
+const PIPER_CUSTOM_MODEL = "custom";
+
+let voicesManifestCache: Record<string, PiperVoicesManifestEntry> | null = null;
+
 // ---------------------------------------------------------------------------
 // Internal helpers
 // ---------------------------------------------------------------------------
@@ -183,6 +210,135 @@ function resolveBinaryFromPath(binaryName: string): string | null {
 	}
 
 	return null;
+}
+
+async function fetchVoicesManifest(): Promise<
+	Record<string, PiperVoicesManifestEntry>
+> {
+	if (voicesManifestCache) {
+		return voicesManifestCache;
+	}
+
+	const response = await fetch(PIPER_VOICES_URL);
+	if (!response.ok) {
+		throw new Error(
+			`PiperTTS: unable to fetch Piper voices manifest (${response.status}).`,
+		);
+	}
+
+	const json = (await response.json()) as Record<
+		string,
+		PiperVoicesManifestEntry
+	>;
+	voicesManifestCache = json;
+	return json;
+}
+
+/**
+ * Returns all known Piper catalog model ids plus `"custom"`.
+ */
+export async function listPiperModels(): Promise<string[]> {
+	const manifest = await fetchVoicesManifest();
+	return [...Object.keys(manifest).sort(), PIPER_CUSTOM_MODEL];
+}
+
+function resolveManifestEntry(
+	manifest: Record<string, PiperVoicesManifestEntry>,
+	modelId: string,
+): PiperVoicesManifestEntry | null {
+	if (manifest[modelId]) {
+		return manifest[modelId];
+	}
+
+	for (const entry of Object.values(manifest)) {
+		if (entry.aliases?.includes(modelId)) {
+			return entry;
+		}
+	}
+
+	return null;
+}
+
+function selectModelFiles(entry: PiperVoicesManifestEntry): {
+	onnxPath: string;
+	jsonPath: string;
+} {
+	const files = Object.keys(entry.files);
+	const onnxPath = files.find((file) => file.endsWith(".onnx"));
+	const jsonPath = files.find((file) => file.endsWith(".onnx.json"));
+
+	if (!onnxPath || !jsonPath) {
+		throw new Error(
+			`PiperTTS: model "${entry.key}" is missing .onnx or .onnx.json in voices manifest.`,
+		);
+	}
+
+	return { onnxPath, jsonPath };
+}
+
+async function downloadToFile(url: string, filePath: string): Promise<void> {
+	const response = await fetch(url);
+	if (!response.ok) {
+		throw new Error(
+			`PiperTTS: download failed (${response.status}) for ${url}`,
+		);
+	}
+
+	const bytes = Buffer.from(await response.arrayBuffer());
+	fs.writeFileSync(filePath, bytes);
+}
+
+async function ensureCatalogModelDownloaded(
+	modelId: string,
+	modelsDir: string,
+): Promise<string> {
+	const manifest = await fetchVoicesManifest();
+	const entry = resolveManifestEntry(manifest, modelId);
+
+	if (!entry) {
+		throw new Error(
+			`PiperTTS: unknown model "${modelId}". Use listPiperModels() to inspect available ids, or use model="custom" with modelPath.`,
+		);
+	}
+
+	const { onnxPath, jsonPath } = selectModelFiles(entry);
+	const targetDir = path.resolve(modelsDir);
+	const targetModelPath = path.join(targetDir, path.basename(onnxPath));
+	const targetJsonPath = path.join(targetDir, path.basename(jsonPath));
+
+	if (!fs.existsSync(targetDir)) {
+		fs.mkdirSync(targetDir, { recursive: true });
+	}
+
+	if (!fs.existsSync(targetModelPath)) {
+		await downloadToFile(
+			`${PIPER_FILES_BASE_URL}/${onnxPath}`,
+			targetModelPath,
+		);
+	}
+
+	if (!fs.existsSync(targetJsonPath)) {
+		await downloadToFile(`${PIPER_FILES_BASE_URL}/${jsonPath}`, targetJsonPath);
+	}
+
+	return targetModelPath;
+}
+
+async function resolveModelPathFromOptions(
+	options: PiperTTSOptions,
+): Promise<string> {
+	if (options.model && options.model !== PIPER_CUSTOM_MODEL) {
+		const modelsDir = options.modelsDir ?? "models";
+		return ensureCatalogModelDownloaded(options.model, modelsDir);
+	}
+
+	if (!options.modelPath) {
+		throw new Error(
+			"PiperTTS: modelPath is required when model is not set to a catalog id.",
+		);
+	}
+
+	return path.resolve(options.modelPath);
 }
 
 function resolveExecutable(commandOrPath: string): string {
@@ -386,14 +542,13 @@ export class PiperTTS {
 	 */
 	static async create(options: PiperTTSOptions): Promise<PiperTTS> {
 		const {
-			modelPath,
 			piperBinaryPath,
 			warmUpText = "Hello, this is a warm-up test.",
 			defaultOptions = {},
 		} = options;
 
 		// Resolve & validate model path
-		const resolvedModel = path.resolve(modelPath);
+		const resolvedModel = await resolveModelPathFromOptions(options);
 		if (!fs.existsSync(resolvedModel)) {
 			throw new Error(`PiperTTS: model file not found at "${resolvedModel}".`);
 		}
