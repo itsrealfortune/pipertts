@@ -1,5 +1,5 @@
 {
-  "name": "piper-tts-node",
+  "name": "pipertts",
   "version": "1.0.0",
   "description": "TypeScript wrapper for PiperTTS with bundled binaries for Windows and Linux",
   "main": "dist/index.js",
