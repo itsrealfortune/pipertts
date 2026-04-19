@@ -31,10 +31,20 @@
     "speech-synthesis"
   ],
   "author": "",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/itsrealfortune/pipertts.git"
+  },
+  "bugs": {
+    "url": "https://github.com/itsrealfortune/pipertts/issues"
+  },
+  "homepage": "https://github.com/itsrealfortune/pipertts#readme",
   "license": "MIT",
   "devDependencies": {
-    "@types/node": "^20.0.0",
-    "typescript": "^5.0.0",
-    "@types/bun": "latest"
+    "@biomejs/biome": "^2.4.12",
+    "@types/bun": "^1.3.12",
+    "@types/node": "^25.6.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^6.0.3"
   }
 }
