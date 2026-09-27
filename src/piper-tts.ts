@@ -251,8 +251,8 @@ export class PiperTTS {
 	 * - `outputFormat: "wav"` (default): WAV bytes via a temp file
 	 *   (or directly to `outputFile` when set).
 	 * - `outputFormat: "raw"`: raw PCM bytes captured from stdout.
-	 * - `outputFormat: "mp3" | "ogg"`: WAV internally, transcoded via
-	 *   ffmpeg (or pure-JS lamejs for mp3).
+	 * - `outputFormat: "mp3" | "ogg" | "opus"`: WAV internally, transcoded via
+	 *   ffmpeg (or pure-JS fallbacks: lamejs for mp3, opusscript for opus).
 	 *
 	 * @param {string} text - Input text to synthesize.
 	 * @param {PiperInferenceOptions} callOptions - Optional inference options for this call.
@@ -276,7 +276,10 @@ export class PiperTTS {
 		validateInferenceOptions(effectiveOptions);
 
 		const outputFormat = effectiveOptions.outputFormat ?? "wav";
-		const needsTranscode = outputFormat === "mp3" || outputFormat === "ogg";
+		const needsTranscode =
+			outputFormat === "mp3" ||
+			outputFormat === "ogg" ||
+			outputFormat === "opus";
 
 		const modelPath = effectiveOptions.modelPath ?? this.modelPath;
 		const configPath = resolveConfigPath(
@@ -329,7 +332,10 @@ export class PiperTTS {
 			let audio: Buffer = wavAudio as Buffer;
 			if (needsTranscode) {
 				const { transcodeAudio } = await import("./native/transcode.js");
-				audio = await transcodeAudio(wavAudio, outputFormat as "mp3" | "ogg");
+				audio = await transcodeAudio(
+					wavAudio,
+					outputFormat as "mp3" | "ogg" | "opus",
+				);
 				if (useOutputFile) {
 					await fsp.mkdir(path.dirname(useOutputFile), { recursive: true });
 					await fsp.writeFile(useOutputFile, audio);

@@ -2,10 +2,10 @@
  * Supported output audio formats for PiperTTS.
  *
  * `wav` and `raw` are produced natively by the Piper CLI.
- * `mp3` / `ogg` require external transcoding (e.g. ffmpeg) and are
- * rejected explicitly by `synthesize()` instead of silently returning WAV.
+ * `mp3` / `ogg` / `opus` are transcoded from WAV (ffmpeg when available,
+ * pure-JS fallbacks otherwise: lamejs for mp3, opusscript for opus).
  */
-export type PiperOutputFormat = "raw" | "wav" | "mp3" | "ogg";
+export type PiperOutputFormat = "raw" | "wav" | "mp3" | "ogg" | "opus";
 
 /**
  * Noise scale controls the variability in the generated audio.
@@ -47,8 +47,8 @@ export interface PiperInferenceOptions {
 	 * Output audio format.
 	 * - `wav`: standard WAV file (default).
 	 * - `raw`: raw PCM captured from stdout (no file written by Piper).
-	 * - `mp3` / `ogg`: transcoded from WAV (ffmpeg when available,
-	 *   pure-JS lamejs fallback for mp3).
+	 * - `mp3` / `ogg` / `opus`: transcoded from WAV (ffmpeg when available,
+	 *   pure-JS fallbacks otherwise).
 	 */
 	outputFormat?: PiperOutputFormat;
 	/** Speaker ID for multi-speaker models. Must be an integer >= 0. */

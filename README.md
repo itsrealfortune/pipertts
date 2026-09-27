@@ -135,8 +135,9 @@ Phonemizer data (Nakdimon, tashkeel, Lithuanian TSVs) auto-downloads once
 into `./piper-data/` (override with `nativeDataDir` or explicit paths).
 Arabic `ar` voices are diacritized with tashkeel automatically.
 
-Output formats: `wav`, `raw`, `mp3`, `ogg`. `mp3`/`ogg` transcode from WAV
-via `ffmpeg` when available, else pure-JS lamejs (`mp3` only).
+Output formats: `wav`, `raw`, `mp3`, `ogg`, `opus`. `mp3`/`ogg`/`opus`
+transcode from WAV via `ffmpeg` when available, else pure-JS fallbacks
+(lamejs for `mp3`, opusscript + Ogg muxer for `opus`; `ogg` needs ffmpeg).
 
 Espeak bridge: `src/native/espeak-bridge/` is an N-API port of
 `espeakbridge.c` (byte-identical phonemes). Prebuilds ship with the package
@@ -228,7 +229,7 @@ await tts.synthesizeToFile("Write to file", "./output.wav", {
 | `modelPath` | `string` | instance model | Per-call model override |
 | `configPath` | `string` | auto (`<model>.json`) | Explicit model config path |
 | `outputFile` | `string` | temp file | If set, writes directly there |
-| `outputFormat` | `"raw" \| "wav" \| "mp3" \| "ogg"` | `"wav"` | `mp3`/`ogg` transcode from WAV (ffmpeg, else lamejs for mp3) |
+| `outputFormat` | `"raw" \| "wav" \| "mp3" \| "ogg" \| "opus"` | `"wav"` | `mp3`/`ogg`/`opus` transcode from WAV (ffmpeg, else pure-JS fallbacks) |
 | `speakerId` | `number` | - | For multi-speaker models |
 | `noiseScale` | `number` | `0.667` | Voice variability |
 | `noiseWScale` | `number` | `0.8` | Timing variability |

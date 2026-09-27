@@ -8,7 +8,7 @@
 import { execFile } from "node:child_process";
 import * as fs from "node:fs";
 
-export type TranscodeFormat = "mp3" | "ogg";
+export type TranscodeFormat = "mp3" | "ogg" | "opus";
 
 function findFfmpeg(): string | null {
 	const explicit = process.env.FFMPEG_PATH;
@@ -55,22 +55,39 @@ function ffmpegTranscode(
 					bitrate,
 					"pipe:1",
 				]
-			: [
-					"-hide_banner",
-					"-loglevel",
-					"error",
-					"-i",
-					"pipe:0",
-					"-ar",
-					"44100",
-					"-f",
-					"ogg",
-					"-c:a",
-					"libvorbis",
-					"-b:a",
-					bitrate,
-					"pipe:1",
-				];
+			: format === "ogg"
+				? [
+						"-hide_banner",
+						"-loglevel",
+						"error",
+						"-i",
+						"pipe:0",
+						"-ar",
+						"44100",
+						"-f",
+						"ogg",
+						"-c:a",
+						"libvorbis",
+						"-b:a",
+						bitrate,
+						"pipe:1",
+					]
+				: [
+						"-hide_banner",
+						"-loglevel",
+						"error",
+						"-i",
+						"pipe:0",
+						"-ar",
+						"48000",
+						"-f",
+						"opus",
+						"-c:a",
+						"libopus",
+						"-b:a",
+						bitrate,
+						"pipe:1",
+					];
 	return new Promise((resolve, reject) => {
 		const child = execFile(
 			ffmpeg,
@@ -174,8 +191,9 @@ async function lamejsMp3(wav: Buffer, bitrateKbps = 128): Promise<Buffer> {
 }
 
 /**
- * Transcodes a WAV buffer to mp3 or ogg.
- * Uses ffmpeg when available, else lamejs (mp3 only).
+ * Transcodes a WAV buffer to mp3, ogg, or opus.
+ * Uses ffmpeg when available, else pure-JS fallbacks
+ * (lamejs for mp3, opusscript + Ogg muxer for opus).
  */
 export async function transcodeAudio(
 	wav: Buffer,
@@ -194,6 +212,11 @@ export async function transcodeAudio(
 	}
 	if (format === "mp3") {
 		return lamejsMp3(wav, options?.bitrateKbps ?? 128);
+	}
+	if (format === "opus") {
+		const { samples, sampleRate } = wavToInt16Mono(wav);
+		const { encodeOpusOgg } = await import("./opus.js");
+		return encodeOpusOgg(samples, sampleRate, options?.bitrateKbps ?? 128);
 	}
 	throw new Error(
 		"PiperNative: ogg without ffmpeg is not supported. Install ffmpeg or set FFMPEG_PATH.",

@@ -67,7 +67,7 @@ export interface NativeTtsOptions {
 
 export interface NativeSynthesizeOptions extends SynthesisConfig {
 	sentenceSilence?: number;
-	outputFormat?: "wav" | "raw" | "mp3" | "ogg";
+	outputFormat?: "wav" | "raw" | "mp3" | "ogg" | "opus";
 	/** When set, the final audio is also written to this path. */
 	outputFile?: string;
 }
@@ -349,7 +349,7 @@ export class PiperNativeTTS {
 		let audio: Buffer;
 		if (format === "raw") {
 			audio = chunksToRaw(chunks, this.config.sampleRate, silence);
-		} else if (format === "mp3" || format === "ogg") {
+		} else if (format === "mp3" || format === "ogg" || format === "opus") {
 			const wav = chunksToWav(chunks, this.config.sampleRate, silence);
 			const { transcodeAudio } = await import("./transcode.js");
 			audio = await transcodeAudio(wav, format);

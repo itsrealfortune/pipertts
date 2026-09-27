@@ -39,6 +39,7 @@ export {
 export { LithuanianPhonemizer } from "./lithuanian.js";
 export { transcodeAudio, isFfmpegAvailable } from "./transcode.js";
 export type { TranscodeFormat } from "./transcode.js";
+export { encodeOpusOgg, resampleMonoInt16 } from "./opus.js";
 export { PiperNativeTTS } from "./voice.js";
 export type {
 	NativeAudioChunk,
