@@ -25,7 +25,8 @@
 		"bench": "rm -rf .benchmark-shells/ && bun benchmark-virtualshell.ts",
 		"standalone-build": "bunx esbuild src/standalone.ts --bundle --platform=node --target=node18 --outfile=standalone.js --tree-shaking=true --minify --sourcemap",
 		"build:espeak-bridge": "node-gyp rebuild",
-		"prebuild": "prebuildify --napi --strip -n espeak_bridge"
+		"prebuild": "prebuildify --napi --strip -n espeak_bridge",
+		"install": "node scripts/install-bridge.js"
 	},
 	"keywords": [
 		"piper",
