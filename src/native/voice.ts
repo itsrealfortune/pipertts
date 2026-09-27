@@ -19,9 +19,11 @@ import { createNativeSession, type NativeSession } from "./inference.js";
 import { phonemesToIds } from "./phoneme-ids.js";
 import {
 	assertSupportedPhonemeType,
+	espeakBridgePhonemizeWithRawBlocks,
 	espeakCliPhonemize,
 	textToPhonemes,
 } from "./phonemizer.js";
+import { getEspeakBridge } from "./espeak-bridge/loader.js";
 import {
 	applyVolumeAndClip,
 	chunksToRaw,
@@ -107,6 +109,15 @@ export class PiperNativeTTS {
 	async phonemize(text: string): Promise<string[][]> {
 		if (this.config.phonemeType === "text") {
 			return [textToPhonemes(text)];
+		}
+		const bridge = getEspeakBridge();
+		if (bridge) {
+			return espeakBridgePhonemizeWithRawBlocks(
+				text,
+				this.config.espeakVoice,
+				this.config.vowelClusters,
+				bridge,
+			);
 		}
 		return espeakCliPhonemize(
 			text,

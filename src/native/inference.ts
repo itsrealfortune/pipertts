@@ -45,11 +45,14 @@ export async function createNativeSession(
 	options?: { numThreads?: number },
 ): Promise<NativeSession> {
 	const ort = await loadOrt();
-	const session = await ort.InferenceSession.create(modelPath, {
+	const sessionOptions: Record<string, unknown> = {
 		executionProviders: ["cpu"],
 		graphOptimizationLevel: "all",
-		intraOpNumThreads: options?.numThreads,
-	});
+	};
+	if (options?.numThreads !== undefined) {
+		sessionOptions["intraOpNumThreads"] = options.numThreads;
+	}
+	const session = await ort.InferenceSession.create(modelPath, sessionOptions);
 
 	return {
 		async run({ phonemeIds, scales, speakerId }): Promise<Float32Array> {

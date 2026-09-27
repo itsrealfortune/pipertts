@@ -22,7 +22,8 @@
 		"deploy:npm": "npm publish --access public",
 		"publish-package": "bash ./scripts/publish-package.sh",
 		"bench": "rm -rf .benchmark-shells/ && bun benchmark-virtualshell.ts",
-		"standalone-build": "bunx esbuild src/standalone.ts --bundle --platform=node --target=node18 --outfile=standalone.js --tree-shaking=true --minify --sourcemap"
+		"standalone-build": "bunx esbuild src/standalone.ts --bundle --platform=node --target=node18 --outfile=standalone.js --tree-shaking=true --minify --sourcemap",
+		"build:espeak-bridge": "cd src/native/espeak-bridge && node-gyp rebuild && mkdir -p ../../../build/Release && cp build/Release/espeak_bridge.node ../../../build/Release/"
 	},
 	"keywords": [
 		"piper",

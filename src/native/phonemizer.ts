@@ -188,7 +188,120 @@ export async function espeakCliPhonemize(
 	return sentences.filter((s) => s.length > 0);
 }
 
+/**
+ * Exact port of `EspeakPhonemizer.phonemize` using the N-API bridge.
+ * Mirrors `phonemize_espeak.py:31-79`: clause loop, `(lang)` flag strip,
+ * terminator append (`,`/`:`/`;` add trailing space), NFD codepoints,
+ * vowel-cluster merge per sentence.
+ */
+export function espeakBridgePhonemize(
+	text: string,
+	espeakVoice: string,
+	vowelClusters: Set<string> | null,
+	bridge: {
+		phonemize(
+			voice: string,
+			text: string,
+		): {
+			phonemes: string;
+			terminator: string;
+			endOfSentence: boolean;
+		}[];
+	},
+): string[][] {
+	const allPhonemes: string[][] = [];
+	let sentencePhonemes: string[] = [];
+
+	for (const clause of bridge.phonemize(espeakVoice, text)) {
+		let phonemesStr = clause.phonemes.replace(/\(.*?\)/g, "");
+		phonemesStr += clause.terminator;
+		if (
+			clause.terminator === "," ||
+			clause.terminator === ":" ||
+			clause.terminator === ";"
+		) {
+			phonemesStr += " ";
+		}
+		sentencePhonemes.push(...textToPhonemes(phonemesStr));
+		if (clause.endOfSentence) {
+			sentencePhonemes = mergeVowelClusters(sentencePhonemes, vowelClusters);
+			allPhonemes.push(sentencePhonemes);
+			sentencePhonemes = [];
+		}
+	}
+	if (sentencePhonemes.length > 0) {
+		allPhonemes.push(mergeVowelClusters(sentencePhonemes, vowelClusters));
+	}
+	return allPhonemes;
+}
+
 const SUPPORTED_NATIVE_TYPES = new Set(["espeak", "text"]);
+
+/**
+ * Full port of `PiperVoice.phonemize` ESPEAK branch (`voice.py:273-327`):
+ * `[[raw]]` block handling + bridge clauses per text part.
+ */
+export function espeakBridgePhonemizeWithRawBlocks(
+	text: string,
+	espeakVoice: string,
+	vowelClusters: Set<string> | null,
+	bridge: {
+		phonemize(
+			voice: string,
+			text: string,
+		): {
+			phonemes: string;
+			terminator: string;
+			endOfSentence: boolean;
+		}[];
+	},
+): string[][] {
+	const phonemes: string[][] = [];
+	const parts = splitRawBlocks(text);
+	let prevRawPhonemes = false;
+
+	for (let i = 0; i < parts.length; i++) {
+		const part = parts[i] as string;
+		if (isRawBlock(part)) {
+			prevRawPhonemes = true;
+			if (phonemes.length === 0) {
+				phonemes.push([]);
+			}
+			const last = phonemes[phonemes.length - 1] as string[];
+			if (i > 0 && (parts[i - 1] as string).endsWith(" ")) {
+				last.push(" ");
+			}
+			last.push(...rawBlockToPhonemes(part));
+			if (i < parts.length - 1 && (parts[i + 1] as string).startsWith(" ")) {
+				last.push(" ");
+			}
+			continue;
+		}
+
+		let partSentences = espeakBridgePhonemize(
+			part,
+			espeakVoice,
+			vowelClusters,
+			bridge,
+		);
+		if (prevRawPhonemes && partSentences.length > 0) {
+			(phonemes[phonemes.length - 1] as string[]).push(
+				...(partSentences[0] as string[]),
+			);
+			partSentences = partSentences.slice(1);
+		}
+		phonemes.push(...partSentences);
+		prevRawPhonemes = false;
+	}
+
+	if (
+		phonemes.length > 0 &&
+		(phonemes[phonemes.length - 1] as string[]).length === 0
+	) {
+		phonemes.pop();
+	}
+	return phonemes;
+}
 
 export function assertSupportedPhonemeType(phonemeType: string): void {
 	if (!SUPPORTED_NATIVE_TYPES.has(phonemeType)) {

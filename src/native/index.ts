@@ -23,6 +23,8 @@ export {
 	phonemesToIds,
 } from "./phoneme-ids.js";
 export {
+	espeakBridgePhonemize,
+	espeakBridgePhonemizeWithRawBlocks,
 	espeakCliPhonemize,
 	splitSentences,
 	textToPhonemes,
