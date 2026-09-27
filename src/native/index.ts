@@ -38,6 +38,13 @@ export {
 } from "./hebrew.js";
 export { LithuanianPhonemizer } from "./lithuanian.js";
 export {
+	ThaiPhonemizer,
+	ensureTltkDataDir,
+	getTh2ipa,
+	thNumberToWords,
+	thNumbersToWords,
+} from "./thai.js";
+export {
 	BertWordPieceTokenizer,
 	ChinesePhonemizer,
 	G2PWOnnxConverter,

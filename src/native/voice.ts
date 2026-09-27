@@ -20,6 +20,7 @@ import {
 import { ensureNativeDataBundle } from "./data.js";
 import { ChinesePhonemizer, chinesePhonemesToIds } from "./chinese.js";
 import { HebrewPhonemizer } from "./hebrew.js";
+import { ThaiPhonemizer } from "./thai.js";
 import { createNativeSession, type NativeSession } from "./inference.js";
 import { LithuanianPhonemizer } from "./lithuanian.js";
 import { phonemesToIds } from "./phoneme-ids.js";
@@ -64,6 +65,8 @@ export interface NativeTtsOptions {
 	g2pwModelDir?: string;
 	/** Explicit Lithuanian data dir with lt_*.tsv (skips download). */
 	lithuanianDataDir?: string;
+	/** Explicit TLTK data dir (skips download). */
+	tltkDataDir?: string;
 	/** Enable Arabic diacritization for `ar` voices (default: true). */
 	useTashkeel?: boolean;
 	/** Logit threshold for taskeen, mirrors PiperVoice (default: 0.8). */
@@ -111,6 +114,7 @@ export class PiperNativeTTS {
 		tashkeelModelDir?: string;
 		nakdimonModelPath?: string;
 		lithuanianDataDir?: string;
+		tltkDataDir?: string;
 		g2pwModelDir?: string;
 		useTashkeel: boolean;
 		taskeenThreshold: number;
@@ -119,6 +123,7 @@ export class PiperNativeTTS {
 	private hebrew?: HebrewPhonemizer | null;
 	private lithuanian?: LithuanianPhonemizer | null;
 	private chinese?: ChinesePhonemizer | null;
+	private thai?: ThaiPhonemizer | null;
 
 	private constructor(
 		config: PiperConfig,
@@ -130,6 +135,7 @@ export class PiperNativeTTS {
 			tashkeelModelDir?: string;
 			nakdimonModelPath?: string;
 			lithuanianDataDir?: string;
+			tltkDataDir?: string;
 			g2pwModelDir?: string;
 			useTashkeel: boolean;
 			taskeenThreshold: number;
@@ -172,6 +178,7 @@ export class PiperNativeTTS {
 				tashkeelModelDir: options.tashkeelModelDir,
 				nakdimonModelPath: options.nakdimonModelPath,
 				lithuanianDataDir: options.lithuanianDataDir,
+				tltkDataDir: options.tltkDataDir,
 				g2pwModelDir: options.g2pwModelDir,
 				useTashkeel: options.useTashkeel ?? true,
 				taskeenThreshold: options.taskeenThreshold ?? 0.8,
@@ -199,6 +206,9 @@ export class PiperNativeTTS {
 		}
 		if (this.config.phonemeType === "pinyin") {
 			return this.getChinese().then((c) => c.phonemize(text));
+		}
+		if (this.config.phonemeType === "thai") {
+			return this.getThai().then((t) => t.phonemize(text));
 		}
 		const input =
 			this.config.espeakVoice === "ar" && this.resourceOptions.useTashkeel
@@ -296,6 +306,19 @@ export class PiperNativeTTS {
 			);
 		}
 		return this.lithuanian;
+	}
+
+	private async getThai(): Promise<ThaiPhonemizer> {
+		if (!this.thai) {
+			const { ensureTltkDataDir } = await import("./thai.js");
+			const dir =
+				this.resourceOptions.tltkDataDir ??
+				(await ensureTltkDataDir(
+					path.join(this.resourceOptions.nativeDataDir, "tltk"),
+				));
+			this.thai = new ThaiPhonemizer({ dataDir: dir });
+		}
+		return this.thai;
 	}
 
 	private async getChinese(): Promise<ChinesePhonemizer> {

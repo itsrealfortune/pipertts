@@ -247,6 +247,7 @@ const SUPPORTED_NATIVE_TYPES = new Set([
 	"hebrew",
 	"lithuanian",
 	"pinyin",
+	"thai",
 ]);
 
 /**
@@ -317,10 +318,9 @@ export function espeakBridgePhonemizeWithRawBlocks(
 
 const UNSUPPORTED_REASONS: Record<string, string> = {
 	japanese: "requires OpenJTalk/mecab (native); not portable to pure TS",
-	thai: "requires TLTK segmentation + G2P data; not portable to pure TS",
 };
 
-/** Throws for phoneme types without a native port (japanese/thai need native models). */
+/** Throws for phoneme types without a native port (japanese needs native models). */
 export function assertSupportedPhonemeType(phonemeType: string): void {
 	if (!SUPPORTED_NATIVE_TYPES.has(phonemeType)) {
 		const reason = UNSUPPORTED_REASONS[phonemeType] ?? "unknown phoneme type";
