@@ -8,6 +8,7 @@
 
 const MAX_WAV_VALUE = 32767;
 
+/** Scales samples so the peak absolute value is 1; returns zeros for silence. Port of `voice.py` normalization. */
 export function normalizeAudio(samples: Float32Array): Float32Array {
 	let max = 0;
 	for (let i = 0; i < samples.length; i++) {
@@ -26,6 +27,7 @@ export function normalizeAudio(samples: Float32Array): Float32Array {
 	return out;
 }
 
+/** Applies volume gain and clips samples to [-1, 1]. Port of `voice.py` audio post-processing. */
 export function applyVolumeAndClip(
 	samples: Float32Array,
 	volume: number,
@@ -38,6 +40,7 @@ export function applyVolumeAndClip(
 	return out;
 }
 
+/** Converts float samples to little-endian int16 PCM bytes (x32767). Port of `voice.py` int16 conversion. */
 export function floatToInt16Bytes(samples: Float32Array): Buffer {
 	const buffer = Buffer.alloc(samples.length * 2);
 	for (let i = 0; i < samples.length; i++) {
@@ -59,6 +62,7 @@ export function silenceBytes(sampleRate: number, seconds: number): Buffer {
 	return Buffer.alloc(Math.floor(sampleRate * seconds) * 2);
 }
 
+/** Builds a 44-byte WAV header for PCM audio. */
 export function writeWavHeader(
 	sampleRate: number,
 	numFrames: number,

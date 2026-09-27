@@ -9,6 +9,7 @@
  * without the heavy native dependency installed.
  */
 
+/** Minimal structural type for onnxruntime-node (lazy import, mirrors piper1-gpl inference). */
 export interface OrtLike {
 	InferenceSession: {
 		create(
@@ -32,6 +33,7 @@ async function loadOrt(): Promise<OrtLike> {
 	}
 }
 
+/** High-level inference session: phoneme ids + scales to float32 audio (voice.py:498-575). */
 export interface NativeSession {
 	run(feeds: {
 		phonemeIds: number[];
@@ -41,6 +43,7 @@ export interface NativeSession {
 	close?(): Promise<void>;
 }
 
+/** Thin wrapper over a raw ONNX session exposing input names and untyped run. */
 export interface RawOrtSession {
 	inputNames: string[];
 	run(
@@ -48,6 +51,7 @@ export interface RawOrtSession {
 	): Promise<Record<string, { data: ArrayLike<number> }>>;
 }
 
+/** Creates a raw ONNX session with CPU provider and full graph optimization. */
 export async function createRawOrtSession(modelPath: string): Promise<{
 	ort: OrtLike;
 	session: RawOrtSession;
@@ -72,6 +76,7 @@ export async function createRawOrtSession(modelPath: string): Promise<{
 	return { ort, session };
 }
 
+/** Creates a NativeSession building piper1-gpl feeds (input, input_lengths, scales, sid). */
 export async function createNativeSession(
 	modelPath: string,
 	options?: { numThreads?: number },

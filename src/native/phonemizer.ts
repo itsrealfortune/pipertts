@@ -16,22 +16,27 @@ import { execFile } from "node:child_process";
 const PHONEME_BLOCK_PATTERN = /(\[\[.*?\]\])/;
 const SENTENCE_SPLIT_PATTERN = /([^.!?]+[.!?]+["'”’)]*\s*|[^.!?]+\s*$)/g;
 
+/** Splits text on `[[...]]` raw blocks, keeping delimiters. Port of the ESPEAK-branch block handling in `voice.py`. */
 export function splitRawBlocks(text: string): string[] {
 	return text.split(PHONEME_BLOCK_PATTERN).filter((part) => part.length > 0);
 }
 
+/** Returns true when the part is a `[[...]]` raw phoneme block. */
 export function isRawBlock(part: string): boolean {
 	return part.startsWith("[[") && part.endsWith("]]");
 }
 
+/** Strips `[[`/`]]` from a raw block and splits the contents to codepoints. Port of the raw-block branch in `voice.py`. */
 export function rawBlockToPhonemes(block: string): string[] {
 	return [...block.slice(2, -2).trim()];
 }
 
+/** NFD-normalizes text and splits it to codepoints. Port of the TEXT branch of `PiperVoice.phonemize` in `voice.py`. */
 export function textToPhonemes(text: string): string[] {
 	return [...text.normalize("NFD")];
 }
 
+/** Splits text into sentences with body and trailing terminator. Used to approximate `espeakbridge.get_phonemes` clauses. */
 export function splitSentences(
 	text: string,
 ): { body: string; terminator: string }[] {
@@ -50,6 +55,7 @@ export function splitSentences(
 		});
 }
 
+/** Merges adjacent phonemes into multi-codepoint vowel clusters (longest match). Port of the vowel-cluster handling in `voice.py`. */
 export function mergeVowelClusters(
 	phones: string[],
 	clusters: Set<string> | null,
@@ -315,6 +321,7 @@ const UNSUPPORTED_REASONS: Record<string, string> = {
 	thai: "requires TLTK segmentation + G2P data; not portable to pure TS",
 };
 
+/** Throws for phoneme types without a native port (pinyin/japanese/thai need native models). */
 export function assertSupportedPhonemeType(phonemeType: string): void {
 	if (!SUPPORTED_NATIVE_TYPES.has(phonemeType)) {
 		const reason = UNSUPPORTED_REASONS[phonemeType] ?? "unknown phoneme type";

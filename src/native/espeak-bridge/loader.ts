@@ -13,12 +13,14 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 
+/** One espeak-ng clause: phoneme string plus terminator and sentence-end flag. */
 export interface EspeakClause {
 	phonemes: string;
 	terminator: string;
 	endOfSentence: boolean;
 }
 
+/** N-API espeak-ng bridge with atomic phonemize (mirrors piper1-gpl ESPEAK_LOCK). */
 export interface EspeakBridge {
 	initialize(dataDir: string): void;
 	setVoice(voice: string): void;
@@ -67,6 +69,10 @@ function tryLoadAddon(): Omit<EspeakBridge, "phonemize"> | null {
 
 let cached: EspeakBridge | null | undefined;
 
+/**
+ * Returns the cached bridge, loading and initializing it on first call.
+ * `null` when disabled (`PIPER_ESPEAK_BRIDGE=0`), missing, or init fails.
+ */
 export function getEspeakBridge(): EspeakBridge | null {
 	if (cached !== undefined) {
 		return cached;
@@ -108,6 +114,9 @@ export function getEspeakBridge(): EspeakBridge | null {
 	return cached;
 }
 
+/**
+ * True when the native bridge is usable (false → CLI fallback).
+ */
 export function isEspeakBridgeAvailable(): boolean {
 	return getEspeakBridge() !== null;
 }

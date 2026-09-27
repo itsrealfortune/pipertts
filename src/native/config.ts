@@ -6,11 +6,16 @@
  * See https://github.com/OHF-Voice/piper1-gpl
  */
 
+/** Default inference noise scale from `config.py`. */
 export const DEFAULT_NOISE_SCALE = 0.667;
+/** Default length (speech-rate) scale from `config.py`. */
 export const DEFAULT_LENGTH_SCALE = 1.0;
+/** Default phoneme-width noise scale from `config.py`. */
 export const DEFAULT_NOISE_W_SCALE = 0.8;
+/** Default STFT hop length from `config.py`. */
 export const DEFAULT_HOP_LENGTH = 256;
 
+/** Phoneme back-end type. Port of `PhonemeType` in `config.py`. */
 export type PhonemeType =
 	| "espeak"
 	| "text"
@@ -20,6 +25,7 @@ export type PhonemeType =
 	| "thai"
 	| "lithuanian";
 
+/** Raw voice config JSON shape. Port of `PiperConfig` in `config.py`. */
 export interface PiperConfigDict {
 	num_symbols: number;
 	num_speakers: number;
@@ -39,6 +45,7 @@ export interface PiperConfigDict {
 	default_speaker_id?: number;
 }
 
+/** Normalized voice config with defaults applied. Port of `PiperConfig` in `config.py`. */
 export interface PiperConfig {
 	numSymbols: number;
 	numSpeakers: number;
@@ -56,6 +63,7 @@ export interface PiperConfig {
 	defaultSpeakerId: number;
 }
 
+/** Per-utterance synthesis overrides. Port of `SynthesisConfig` in `config.py`. */
 export interface SynthesisConfig {
 	speakerId?: number;
 	lengthScale?: number;
@@ -65,6 +73,7 @@ export interface SynthesisConfig {
 	volume?: number;
 }
 
+/** Converts a raw config dict to a normalized config, filling defaults from `config.py`. */
 export function piperConfigFromDict(dict: PiperConfigDict): PiperConfig {
 	const inference = dict.inference ?? {};
 	const clusters = dict.vowel_clusters;
@@ -88,6 +97,7 @@ export function piperConfigFromDict(dict: PiperConfigDict): PiperConfig {
 	};
 }
 
+/** Resolves effective length/noise scales, preferring per-synthesis overrides over voice defaults. */
 export function resolveSynthesisParams(
 	config: PiperConfig,
 	syn: SynthesisConfig,
@@ -99,6 +109,7 @@ export function resolveSynthesisParams(
 	};
 }
 
+/** Resolves the speaker id, or null for single-speaker voices. Port of speaker handling in `voice.py`. */
 export function resolveSpeakerId(
 	config: PiperConfig,
 	speakerId?: number,

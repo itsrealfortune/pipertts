@@ -8,6 +8,7 @@
 import { execFile } from "node:child_process";
 import * as fs from "node:fs";
 
+/** Output container for transcodeAudio: ffmpeg target or pure-JS fallback. */
 export type TranscodeFormat = "mp3" | "ogg" | "opus";
 
 function findFfmpeg(): string | null {
@@ -30,6 +31,7 @@ function findFfmpeg(): string | null {
 	return null;
 }
 
+/** Returns true when an ffmpeg binary is found via FFMPEG_PATH or PATH. */
 export function isFfmpegAvailable(): boolean {
 	return findFfmpeg() !== null;
 }

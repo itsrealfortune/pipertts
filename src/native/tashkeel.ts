@@ -72,6 +72,7 @@ async function createTashkeelSession(
 	};
 }
 
+/** Arabic tashkeel diacritizer over an ONNX model. Port of tashkeel/__init__.py. */
 export class TashkeelDiacritizer {
 	private readonly session: TashkeelSession;
 	private readonly inputIdMap: Record<string, number>;
@@ -93,6 +94,7 @@ export class TashkeelDiacritizer {
 		this.hintIdMap = hintIdMap;
 	}
 
+	/** Load model.onnx plus input/target/hint id maps from a directory. */
 	static async load(modelDir: string): Promise<TashkeelDiacritizer> {
 		const readJson = (name: string) =>
 			JSON.parse(fs.readFileSync(path.join(modelDir, name), "utf8"));
@@ -118,6 +120,10 @@ export class TashkeelDiacritizer {
 		);
 	}
 
+	/**
+	 * Add tashkeel diacritics to Arabic text.
+	 * @param taskeenThreshold Optional logit threshold forcing sukun above it. Port of tashkeel/__init__.py.
+	 */
 	async diacritize(text: string, taskeenThreshold?: number): Promise<string> {
 		const stripped = text.trim();
 		if (stripped.length > CHAR_LIMIT) {

@@ -109,6 +109,7 @@ function canNiqqud(letter: string): boolean {
 	return "אבגדהוזחטיכלמנסעפצקרשתךן".includes(letter);
 }
 
+/** Nakdimon ONNX diacritizer restoring Hebrew niqqud. Port of hebrew/__init__.py. */
 export class NakdimonDiacritizer {
 	private readonly ort: import("./inference.js").OrtLike;
 	private readonly session: import("./inference.js").RawOrtSession;
@@ -124,6 +125,7 @@ export class NakdimonDiacritizer {
 		this.inputName = inputName;
 	}
 
+	/** Load the Nakdimon model from a file path or a directory containing nakdimon.onnx. */
 	static async load(modelPathOrDir: string): Promise<NakdimonDiacritizer> {
 		let modelPath = modelPathOrDir;
 		try {
@@ -146,6 +148,7 @@ export class NakdimonDiacritizer {
 		return new NakdimonDiacritizer(ort, session, inputName);
 	}
 
+	/** Run the Nakdimon model over text and return it with niqqud/dagesh/sin marks added. */
 	async diacritize(text: string): Promise<string> {
 		const bare = removeNiqqud(text);
 		const letters = [...bare];
@@ -590,6 +593,7 @@ function syllabifyToIpa(segs: HeSegment[]): string {
 	return pieces.join("");
 }
 
+/** Convert one dotted Hebrew word to IPA. Port of hebrew/hebrew_ipa.py. */
 export function hebrewWordToIpa(word: string): string {
 	let ipa = syllabifyToIpa(resolveShevaAndQamats(wordToSegments(word)));
 	ipa = ipa
@@ -599,11 +603,13 @@ export function hebrewWordToIpa(word: string): string {
 	return ipa.replace(/͡/g, "");
 }
 
+/** Convert dotted Hebrew text to space-joined word IPA. Port of hebrew/hebrew_ipa.py. */
 export function hebrewToIpa(text: string): string {
 	const clean = text.normalize("NFC").replace(TAAMIM, "");
 	return clean.split(/\s+/).filter(Boolean).map(hebrewWordToIpa).join(" ");
 }
 
+/** Hebrew phonemizer: Nakdimon diacritization plus rule-based IPA. Port of phonemize_hebrew.py. */
 export class HebrewPhonemizer {
 	private readonly diacritizer: NakdimonDiacritizer;
 
@@ -611,10 +617,12 @@ export class HebrewPhonemizer {
 		this.diacritizer = diacritizer;
 	}
 
+	/** Load a HebrewPhonemizer from a Nakdimon model path or directory. */
 	static async load(modelPathOrDir: string): Promise<HebrewPhonemizer> {
 		return new HebrewPhonemizer(await NakdimonDiacritizer.load(modelPathOrDir));
 	}
 
+	/** Diacritize undotted text when needed, then return IPA as a single character array. */
 	async phonemize(text: string): Promise<string[][]> {
 		let dotted = text;
 		if (!NIQQUD_DETECT.test(text)) {

@@ -118,6 +118,10 @@ export interface SynthesisResult {
 	options: PiperInferenceOptions;
 }
 
+/**
+ * Single entry of the Piper voices manifest (`voices.json`).
+ * Field names mirror the upstream JSON (snake_case).
+ */
 export interface PiperVoicesManifestEntry {
 	key: string;
 	name?: string;
@@ -135,6 +139,10 @@ export interface PiperVoicesManifestEntry {
 	files: Record<string, { size_bytes?: number; md5_digest?: string }>;
 }
 
+/**
+ * Catalog model metadata returned by `getPiperModelMetadata`.
+ * `null` is returned for `"custom"`.
+ */
 export interface PiperModelMetadata {
 	/** Canonical model key in the voices manifest. */
 	key: string;

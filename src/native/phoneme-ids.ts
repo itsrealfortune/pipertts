@@ -6,10 +6,14 @@
  * https://github.com/OHF-Voice/piper1-gpl
  */
 
+/** Padding sentinel phoneme. Port of `const.py`/`phoneme_ids.py`. */
 export const PAD = "_";
+/** Begin-of-sequence sentinel phoneme. Port of `const.py`/`phoneme_ids.py`. */
 export const BOS = "^";
+/** End-of-sequence sentinel phoneme. Port of `const.py`/`phoneme_ids.py`. */
 export const EOS = "$";
 
+/** Fallback phoneme-to-id map from `phoneme_ids.py`, used when the voice config has none. */
 export const DEFAULT_PHONEME_ID_MAP: Record<string, number[]> = {
 	_: [0],
 	"^": [1],
@@ -179,6 +183,7 @@ export const DEFAULT_PHONEME_ID_MAP: Record<string, number[]> = {
 	oʊ: [165],
 };
 
+/** Mapped ids plus phonemes skipped as unknown by `phonemesToIds`. */
 export interface PhonemesToIdsResult {
 	ids: number[];
 	skipped: string[];

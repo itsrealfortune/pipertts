@@ -10,9 +10,13 @@ import * as fs from "node:fs";
 import { espeakBridgePhonemize, espeakCliPhonemize } from "./phonemizer.js";
 import { getEspeakBridge } from "./espeak-bridge/loader.js";
 
+/** espeak-ng voice id used for Lithuanian base IPA. Port of phonemize_lithuanian.py. */
 export const LT_ESPEAK_VOICE = "lt";
+/** Acute pitch-accent mark placed by the dictionary. */
 export const LT_ACUTE = "ˈ";
+/** Circumflex pitch-accent mark placed by the dictionary. */
 export const LT_CIRCUMFLEX = "ˌ";
+/** Grave pitch-accent mark placed by the dictionary. */
 export const LT_GRAVE = "ˋ";
 const LT_STRESS_MARKS = LT_ACUTE + LT_CIRCUMFLEX + LT_GRAVE;
 
@@ -33,13 +37,16 @@ const LT_STRIP_DIACRITICS = new Map(
 const LT_VOCATIVE_OPENERS = [",", ":", "-", "–", "—"];
 const LT_VOCATIVE_CLOSERS = [",", ".", "!", "?", "…"];
 
+/** Word -> pitch-accent entry (vowel-group index + mark). Port of lt_kirciai.tsv loader. */
 export type LtDictionary = Map<string, { groupIndex: number; mark: string }>;
+/** Word -> fixed IPA override with next-word prefixes. Port of lt_raides.tsv loader. */
 export type LtLetters = Map<string, { ipa: string; prefixes: string[] }>;
 
 function stripLtDiacritics(word: string): string {
 	return [...word].map((c) => LT_STRIP_DIACRITICS.get(c) ?? c).join("");
 }
 
+/** Parse lt_kirciai.tsv content into an accent dictionary. Port of phonemize_lithuanian.py. */
 export function loadLtDictionary(content: string): LtDictionary {
 	const entries: LtDictionary = new Map();
 	for (const line of content.split("\n")) {
@@ -61,10 +68,12 @@ export function loadLtDictionary(content: string): LtDictionary {
 	return entries;
 }
 
+/** Read lt_kirciai.tsv from disk into an accent dictionary. */
 export function loadLtDictionaryFile(path: string): LtDictionary {
 	return loadLtDictionary(fs.readFileSync(path, "utf8"));
 }
 
+/** Parse lt_raides.tsv content into letter-to-IPA overrides. Port of phonemize_lithuanian.py. */
 export function loadLtLetters(content: string): LtLetters {
 	const letters: LtLetters = new Map();
 	for (const line of content.split("\n")) {
@@ -85,10 +94,12 @@ export function loadLtLetters(content: string): LtLetters {
 	return letters;
 }
 
+/** Read lt_raides.tsv from disk into letter-to-IPA overrides. */
 export function loadLtLettersFile(path: string): LtLetters {
 	return loadLtLetters(fs.readFileSync(path, "utf8"));
 }
 
+/** Parse lt_kreipiniai.tsv content into a vocative word set. Port of phonemize_lithuanian.py. */
 export function loadLtVocatives(content: string): Set<string> {
 	const words = new Set<string>();
 	for (const line of content.split("\n")) {
@@ -105,6 +116,7 @@ export function loadLtVocatives(content: string): Set<string> {
 	return words;
 }
 
+/** Read lt_kreipiniai.tsv from disk; returns empty set when missing or empty. */
 export function loadLtVocativesFile(path: string): Set<string> {
 	try {
 		const stat = fs.statSync(path);
@@ -117,6 +129,10 @@ export function loadLtVocativesFile(path: string): Set<string> {
 	return loadLtVocatives(fs.readFileSync(path, "utf8"));
 }
 
+/**
+ * Return the fixed IPA override for a word, or null when no override applies.
+ * Port of phonemize_lithuanian.py letter handling.
+ */
 export function ltLetterIpa(
 	word: string,
 	nextWord: string,
@@ -159,6 +175,7 @@ function ltIsVocative(
 	return opened && closed;
 }
 
+/** Return start offsets of vowel groups in an IPA string. Port of phonemize_lithuanian.py. */
 export function ltIpaVowelGroups(ipa: string): number[] {
 	const chars = [...ipa];
 	const groups: number[] = [];
@@ -180,6 +197,10 @@ export function ltIpaVowelGroups(ipa: string): number[] {
 	return groups;
 }
 
+/**
+ * Insert an accent mark before the vowel group at groupIndex. Port of phonemize_lithuanian.py.
+ * @returns IPA with the mark inserted, or the input unchanged when the index is out of range.
+ */
 export function ltPlaceAccent(
 	ipa: string,
 	groupIndex: number | null,
@@ -225,6 +246,7 @@ export function ltPlaceAccent(
 	);
 }
 
+/** Apply vocative accentuation (initial acute + lengthening). Port of phonemize_lithuanian.py. */
 export function ltVocativeAccent(ipa: string): string {
 	const accented = ltPlaceAccent(ipa, 0, LT_ACUTE);
 	const chars = [...accented];
@@ -252,12 +274,14 @@ export function ltVocativeAccent(ipa: string): string {
 	);
 }
 
+/** Loaded Lithuanian accent resources backing LithuanianPhonemizer. */
 export interface LithuanianData {
 	dictionary: LtDictionary;
 	letters: LtLetters;
 	vocatives: Set<string>;
 }
 
+/** Lithuanian phonemizer: espeak-ng IPA plus dictionary pitch accents. Port of phonemize_lithuanian.py. */
 export class LithuanianPhonemizer {
 	private readonly data: LithuanianData;
 	private readonly espeakBinary: string;
@@ -268,6 +292,7 @@ export class LithuanianPhonemizer {
 		this.espeakBinary = espeakBinary;
 	}
 
+	/** Load dictionary, letter, and vocative files from a directory; missing files read as empty. */
 	static loadFromDir(dir: string, espeakBinary?: string): LithuanianPhonemizer {
 		const read = (name: string) => {
 			try {
@@ -286,6 +311,7 @@ export class LithuanianPhonemizer {
 		);
 	}
 
+	/** Number of entries in the loaded accent dictionary. */
 	get dictionarySize(): number {
 		return this.data.dictionary.size;
 	}
@@ -313,6 +339,7 @@ export class LithuanianPhonemizer {
 		return ipa;
 	}
 
+	/** Phonemize one word via espeak-ng, then apply the dictionary accent or a default initial acute. */
 	async phonemizeWord(word: string): Promise<string> {
 		let ipa = await this.espeakWord(word);
 		const entry = this.data.dictionary.get(word.toLowerCase());
@@ -330,6 +357,7 @@ export class LithuanianPhonemizer {
 		return ltPlaceAccent(ipa, entry.groupIndex, entry.mark);
 	}
 
+	/** Phonemize a sentence, applying letter overrides and vocative accentuation. */
 	async phonemizeSentence(sentence: string): Promise<string> {
 		const pieces: string[] = [];
 		const tokens = sentence.split(/\s+/).filter(Boolean);
@@ -363,6 +391,7 @@ export class LithuanianPhonemizer {
 		return pieces.join(" ");
 	}
 
+	/** Phonemize text into per-sentence NFD character arrays for the voice pipeline. */
 	async phonemize(text: string): Promise<string[][]> {
 		const result: string[][] = [];
 		for (const sentence of text.trim().split(LT_SENTENCE_SPLIT)) {

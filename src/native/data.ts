@@ -15,6 +15,7 @@ import { pipeline } from "node:stream/promises";
 const PIPER_GPL_RAW =
 	"https://raw.githubusercontent.com/OHF-Voice/piper1-gpl/main/src/piper";
 
+/** Data bundle spec: piper1-gpl relative file paths plus license note. */
 export interface NativeDataBundle {
 	/** Files relative to `src/piper/` in piper1-gpl. */
 	files: string[];
@@ -22,6 +23,7 @@ export interface NativeDataBundle {
 	license: string;
 }
 
+/** On-demand phonemizer data bundles downloaded from piper1-gpl (tashkeel/hebrew/lithuanian). */
 export const NATIVE_DATA_BUNDLES: Record<string, NativeDataBundle> = {
 	tashkeel: {
 		files: [

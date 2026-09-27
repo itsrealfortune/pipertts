@@ -38,6 +38,7 @@ import {
 	normalizeAudio,
 } from "./wav.js";
 
+/** One synthesized sentence: PCM plus phoneme trace (mirrors piper1-gpl voice.py). */
 export interface NativeAudioChunk {
 	sampleRate: number;
 	phonemes: string[];
@@ -45,6 +46,7 @@ export interface NativeAudioChunk {
 	pcm16: Buffer;
 }
 
+/** Load options for PiperNativeTTS: model paths, session reuse, phonemizer data. */
 export interface NativeTtsOptions {
 	modelPath: string;
 	configPath?: string;
@@ -65,6 +67,7 @@ export interface NativeTtsOptions {
 	taskeenThreshold?: number;
 }
 
+/** Per-synthesis overrides: synthesis params plus silence gap and output format. */
 export interface NativeSynthesizeOptions extends SynthesisConfig {
 	sentenceSilence?: number;
 	outputFormat?: "wav" | "raw" | "mp3" | "ogg" | "opus";
@@ -94,6 +97,7 @@ async function resolveBundleDir(
 	return destDir;
 }
 
+/** Native Piper TTS voice with persistent ONNX session (mirrors piper1-gpl voice.py PiperVoice). */
 export class PiperNativeTTS {
 	private readonly config: PiperConfig;
 	private readonly session: NativeSession;
