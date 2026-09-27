@@ -235,7 +235,12 @@ export function espeakBridgePhonemize(
 	return allPhonemes;
 }
 
-const SUPPORTED_NATIVE_TYPES = new Set(["espeak", "text"]);
+const SUPPORTED_NATIVE_TYPES = new Set([
+	"espeak",
+	"text",
+	"hebrew",
+	"lithuanian",
+]);
 
 /**
  * Full port of `PiperVoice.phonemize` ESPEAK branch (`voice.py:273-327`):
@@ -303,10 +308,18 @@ export function espeakBridgePhonemizeWithRawBlocks(
 	return phonemes;
 }
 
+const UNSUPPORTED_REASONS: Record<string, string> = {
+	pinyin:
+		"requires the g2pw BERT pipeline (WordPiece tokenizer + tables); not ported yet",
+	japanese: "requires OpenJTalk/mecab (native); not portable to pure TS",
+	thai: "requires TLTK segmentation + G2P data; not portable to pure TS",
+};
+
 export function assertSupportedPhonemeType(phonemeType: string): void {
 	if (!SUPPORTED_NATIVE_TYPES.has(phonemeType)) {
+		const reason = UNSUPPORTED_REASONS[phonemeType] ?? "unknown phoneme type";
 		throw new Error(
-			`PiperNative: phoneme_type "${phonemeType}" is not supported by the MVP (supported: espeak, text).`,
+			`PiperNative: phoneme_type "${phonemeType}" is not supported (${reason}).`,
 		);
 	}
 }

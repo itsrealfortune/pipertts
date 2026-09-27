@@ -251,8 +251,8 @@ export class PiperTTS {
 	 * - `outputFormat: "wav"` (default): WAV bytes via a temp file
 	 *   (or directly to `outputFile` when set).
 	 * - `outputFormat: "raw"`: raw PCM bytes captured from stdout.
-	 * - `outputFormat: "mp3" | "ogg"`: throws, convert the WAV output
-	 *   externally (e.g. with ffmpeg).
+	 * - `outputFormat: "mp3" | "ogg"`: WAV internally, transcoded via
+	 *   ffmpeg (or pure-JS lamejs for mp3).
 	 *
 	 * @param {string} text - Input text to synthesize.
 	 * @param {PiperInferenceOptions} callOptions - Optional inference options for this call.
@@ -276,11 +276,7 @@ export class PiperTTS {
 		validateInferenceOptions(effectiveOptions);
 
 		const outputFormat = effectiveOptions.outputFormat ?? "wav";
-		if (outputFormat === "mp3" || outputFormat === "ogg") {
-			throw new Error(
-				`PiperTTS: outputFormat "${outputFormat}" is not produced natively by Piper. Synthesize to "wav" and convert externally (e.g. ffmpeg).`,
-			);
-		}
+		const needsTranscode = outputFormat === "mp3" || outputFormat === "ogg";
 
 		const modelPath = effectiveOptions.modelPath ?? this.modelPath;
 		const configPath = resolveConfigPath(
@@ -312,9 +308,10 @@ export class PiperTTS {
 		}
 
 		// WAV path: let Piper write a file, then read it back.
+		// mp3/ogg: always via temp WAV, then transcode.
 		let tmpDir: string | null = null;
 		let targetFile: string;
-		if (useOutputFile) {
+		if (useOutputFile && !needsTranscode) {
 			targetFile = useOutputFile;
 			await fsp.mkdir(path.dirname(targetFile), { recursive: true });
 		} else {
@@ -328,7 +325,16 @@ export class PiperTTS {
 				file: targetFile,
 			});
 			await this.runPiper(text, args, timeoutMs);
-			const audio = await fsp.readFile(targetFile);
+			const wavAudio = await fsp.readFile(targetFile);
+			let audio: Buffer = wavAudio as Buffer;
+			if (needsTranscode) {
+				const { transcodeAudio } = await import("./native/transcode.js");
+				audio = await transcodeAudio(wavAudio, outputFormat as "mp3" | "ogg");
+				if (useOutputFile) {
+					await fsp.mkdir(path.dirname(useOutputFile), { recursive: true });
+					await fsp.writeFile(useOutputFile, audio);
+				}
+			}
 			return {
 				audio,
 				durationMs: Date.now() - startMs,

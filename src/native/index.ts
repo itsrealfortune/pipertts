@@ -13,8 +13,8 @@ export type {
 	PiperConfigDict,
 	SynthesisConfig,
 } from "./config.js";
-export { createNativeSession } from "./inference.js";
-export type { NativeSession } from "./inference.js";
+export { createRawOrtSession, createNativeSession } from "./inference.js";
+export type { NativeSession, RawOrtSession, OrtLike } from "./inference.js";
 export {
 	BOS,
 	DEFAULT_PHONEME_ID_MAP,
@@ -29,6 +29,16 @@ export {
 	splitSentences,
 	textToPhonemes,
 } from "./phonemizer.js";
+export { ensureNativeDataBundle, NATIVE_DATA_BUNDLES } from "./data.js";
+export { TashkeelDiacritizer } from "./tashkeel.js";
+export {
+	HebrewPhonemizer,
+	NakdimonDiacritizer,
+	hebrewToIpa,
+} from "./hebrew.js";
+export { LithuanianPhonemizer } from "./lithuanian.js";
+export { transcodeAudio, isFfmpegAvailable } from "./transcode.js";
+export type { TranscodeFormat } from "./transcode.js";
 export { PiperNativeTTS } from "./voice.js";
 export type {
 	NativeAudioChunk,

@@ -38,3 +38,4 @@ models
 # native addon artifacts
 build/
 src/native/espeak-bridge/build/
+prebuilds/

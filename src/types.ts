@@ -47,7 +47,8 @@ export interface PiperInferenceOptions {
 	 * Output audio format.
 	 * - `wav`: standard WAV file (default).
 	 * - `raw`: raw PCM captured from stdout (no file written by Piper).
-	 * - `mp3` / `ogg`: not produced natively, `synthesize()` throws.
+	 * - `mp3` / `ogg`: transcoded from WAV (ffmpeg when available,
+	 *   pure-JS lamejs fallback for mp3).
 	 */
 	outputFormat?: PiperOutputFormat;
 	/** Speaker ID for multi-speaker models. Must be an integer >= 0. */

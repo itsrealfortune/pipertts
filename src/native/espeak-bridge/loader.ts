@@ -1,10 +1,11 @@
 /**
  * Loader for the native espeak-ng bridge (N-API).
  *
- * Tries the compiled addon first, falls back to `null` so callers can use
- * the `espeak-ng` CLI fallback. The bridge call is fully synchronous
- * (setVoice + getPhonemes in one tick), which preserves the process-global
- * voice atomicity that Python achieves with ESPEAK_LOCK.
+ * Search order: prebuilds (`prebuilds/<platform>-<arch>/`, napi-prefixed
+ * first), then local `build/Release` (dev `node-gyp rebuild`). Returns
+ * `null` so callers fall back to the `espeak-ng` CLI. The bridge call is
+ * fully synchronous (setVoice + getPhonemes in one tick), which preserves
+ * the process-global voice atomicity that Python achieves with ESPEAK_LOCK.
  */
 
 import { createRequire } from "node:module";
@@ -32,23 +33,26 @@ const DEFAULT_DATA_DIRS = [
 	"/usr/local/share/espeak-ng-data",
 ];
 
+function candidatePaths(): string[] {
+	const here = path.dirname(fileURLToPath(import.meta.url));
+	// Package root from src/native/espeak-bridge (tsc layout) or dist equivalent.
+	const pkgRoot = path.resolve(here, "..", "..", "..");
+	const prebuildDir = path.join(
+		pkgRoot,
+		"prebuilds",
+		`${process.platform}-${process.arch}`,
+	);
+	return [
+		path.join(prebuildDir, "espeak_bridge.napi.node"),
+		path.join(prebuildDir, "espeak_bridge.node"),
+		path.join(pkgRoot, "build", "Release", "espeak_bridge.node"),
+	];
+}
+
 function tryLoadAddon(): Omit<EspeakBridge, "phonemize"> | null {
 	try {
-		const here = path.dirname(fileURLToPath(import.meta.url));
-		const candidates = [
-			path.join(
-				here,
-				"..",
-				"..",
-				"..",
-				"build",
-				"Release",
-				"espeak_bridge.node",
-			),
-			path.join(here, "build", "Release", "espeak_bridge.node"),
-		];
 		const require = createRequire(import.meta.url);
-		for (const candidate of candidates) {
+		for (const candidate of candidatePaths()) {
 			try {
 				return require(candidate) as Omit<EspeakBridge, "phonemize">;
 			} catch {
@@ -67,10 +71,9 @@ export function getEspeakBridge(): EspeakBridge | null {
 	if (cached !== undefined) {
 		return cached;
 	}
-	// Opt-in: local-toolchain builds segfault at process exit on some
-	// systems (e.g. Debian Node 22 + g++14, reproducible with hello-world
-	// addons). Default stays on the espeak-ng CLI fallback.
-	if (process.env.PIPER_ESPEAK_BRIDGE !== "1") {
+	// Escape hatch: PIPER_ESPEAK_BRIDGE=0 forces the espeak-ng CLI fallback
+	// (useful if a locally built addon misbehaves on an exotic toolchain).
+	if (process.env.PIPER_ESPEAK_BRIDGE === "0") {
 		cached = null;
 		return cached;
 	}

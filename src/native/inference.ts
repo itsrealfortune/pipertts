@@ -16,6 +16,7 @@ export interface OrtLike {
 			options?: unknown,
 		): Promise<{
 			run(feeds: Record<string, unknown>): Promise<Record<string, unknown>>;
+			inputNames?: string[];
 		}>;
 	};
 	Tensor: new (type: string, data: unknown, dims: number[]) => unknown;
@@ -38,6 +39,37 @@ export interface NativeSession {
 		speakerId: number | null;
 	}): Promise<Float32Array>;
 	close?(): Promise<void>;
+}
+
+export interface RawOrtSession {
+	inputNames: string[];
+	run(
+		feeds: Record<string, unknown>,
+	): Promise<Record<string, { data: ArrayLike<number> }>>;
+}
+
+export async function createRawOrtSession(modelPath: string): Promise<{
+	ort: OrtLike;
+	session: RawOrtSession;
+}> {
+	const ort = await loadOrt();
+	const raw = await ort.InferenceSession.create(modelPath, {
+		executionProviders: ["cpu"],
+		graphOptimizationLevel: "all",
+	});
+	const inputNames = [...((raw as { inputNames: string[] }).inputNames ?? [])];
+	const session: RawOrtSession = {
+		inputNames,
+		async run(feeds) {
+			const results = await raw.run(feeds);
+			const out: Record<string, { data: ArrayLike<number> }> = {};
+			for (const [k, v] of Object.entries(results)) {
+				out[k] = v as { data: ArrayLike<number> };
+			}
+			return out;
+		},
+	};
+	return { ort, session };
 }
 
 export async function createNativeSession(

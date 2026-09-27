@@ -109,6 +109,46 @@ const customTts = await PiperTTS.create({
 `getPiperModelMetadata("custom")` returns `null`.
 `getPiperModelsByLanguage("en")` matches all variants like `en_US`, `en_GB`, etc.
 
+## Native inference (`PiperNativeTTS`)
+
+In-process synthesis: no per-call Python spawn, the ONNX session stays warm.
+Measured on `en_US-lessac-medium`: ~2.2s/line (wrapper) vs ~0.4s/line (native).
+
+```ts
+import { PiperNativeTTS } from "pipertts";
+
+const tts = await PiperNativeTTS.load({
+  modelPath: "./models/en_US-lessac-medium.onnx",
+});
+
+const wav = await tts.synthesize("Hello from the native pipeline.");
+const mp3 = await tts.synthesize("Compressed.", { outputFormat: "mp3" });
+```
+
+Run the example: `npx tsx examples/native.ts` (needs a model in `models/`).
+
+Supported `phoneme_type`: `espeak`, `text`, `hebrew` (Nakdimon ONNX + rules),
+`lithuanian` (espeak + stress dictionary). `pinyin`/`japanese`/`thai` throw
+an explicit error (need BERT/OpenJTalk/TLTK, not portable to pure TS).
+
+Phonemizer data (Nakdimon, tashkeel, Lithuanian TSVs) auto-downloads once
+into `./piper-data/` (override with `nativeDataDir` or explicit paths).
+Arabic `ar` voices are diacritized with tashkeel automatically.
+
+Output formats: `wav`, `raw`, `mp3`, `ogg`. `mp3`/`ogg` transcode from WAV
+via `ffmpeg` when available, else pure-JS lamejs (`mp3` only).
+
+Espeak bridge: `src/native/espeak-bridge/` is an N-API port of
+`espeakbridge.c` (byte-identical phonemes). Prebuilds ship with the package
+(`npm run prebuild`, CI in `prebuilds.yml`); local build with
+`npm run build:espeak-bridge` (needs `libespeak-ng-dev`). Without an addon
+it falls back to the `espeak-ng` CLI (~15ms/sentence). Set
+`PIPER_ESPEAK_BRIDGE=0` to force the CLI.
+
+> License note: `src/native/` ports piper1-gpl (GPL-3.0-or-later);
+> the phonemizer data bundles keep their own licenses (tashkeel/hebrew:
+> GPL/MIT, Lithuanian TSVs: CC-BY-4.0).
+
 ## Module usage (ESM and CommonJS)
 
 ESM:
@@ -188,7 +228,7 @@ await tts.synthesizeToFile("Write to file", "./output.wav", {
 | `modelPath` | `string` | instance model | Per-call model override |
 | `configPath` | `string` | auto (`<model>.json`) | Explicit model config path |
 | `outputFile` | `string` | temp file | If set, writes directly there |
-| `outputFormat` | `"raw" \| "wav" \| "mp3" \| "ogg"` | `"wav"` | Audio format |
+| `outputFormat` | `"raw" \| "wav" \| "mp3" \| "ogg"` | `"wav"` | `mp3`/`ogg` transcode from WAV (ffmpeg, else lamejs for mp3) |
 | `speakerId` | `number` | - | For multi-speaker models |
 | `noiseScale` | `number` | `0.667` | Voice variability |
 | `noiseWScale` | `number` | `0.8` | Timing variability |

@@ -6,7 +6,8 @@
 	"types": "dist/index.d.ts",
 	"files": [
 		"dist/**/*",
-		"README.md"
+		"README.md",
+		"prebuilds/**/*"
 	],
 	"type": "module",
 	"scripts": {
@@ -23,7 +24,8 @@
 		"publish-package": "bash ./scripts/publish-package.sh",
 		"bench": "rm -rf .benchmark-shells/ && bun benchmark-virtualshell.ts",
 		"standalone-build": "bunx esbuild src/standalone.ts --bundle --platform=node --target=node18 --outfile=standalone.js --tree-shaking=true --minify --sourcemap",
-		"build:espeak-bridge": "cd src/native/espeak-bridge && node-gyp rebuild && mkdir -p ../../../build/Release && cp build/Release/espeak_bridge.node ../../../build/Release/"
+		"build:espeak-bridge": "node-gyp rebuild",
+		"prebuild": "prebuildify --napi --strip -n espeak_bridge"
 	},
 	"keywords": [
 		"piper",
@@ -45,10 +47,19 @@
 		"@biomejs/biome": "^2.4.15",
 		"@types/bun": "^1.3.14",
 		"@types/node": "^25.9.1",
+		"node-gyp": "^13.0.2",
+		"prebuildify": "^6.0.1",
 		"ts-node": "^10.9.2",
 		"typescript": "^6.0.3"
 	},
 	"dependencies": {
+		"@breezystack/lamejs": "^1.2.7",
 		"onnxruntime-node": "^1.20.0"
+	},
+	"binary": {
+		"module_name": "espeak_bridge",
+		"host": "https://github.com/itsrealfortune/pipertts/releases/download/",
+		"remote_path": "{version}",
+		"package_name": "{module_name}-v{version}-{napi_build_version}-{platform}-{arch}.tar.gz"
 	}
 }
