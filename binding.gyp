@@ -7,6 +7,12 @@
 			"cflags": ["-O2", "-Wall"],
 			"conditions": [
 				[
+					'OS=="linux"',
+					{
+						"libraries": ["-lespeak-ng", "-ldl"],
+					},
+				],
+				[
 					'OS=="win"',
 					{
 						"libraries": ["-lespeak-ng"],

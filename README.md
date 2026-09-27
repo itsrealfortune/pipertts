@@ -147,7 +147,7 @@ transcode from WAV via `ffmpeg` when available, else pure-JS fallbacks
 
 Espeak bridge: `src/native/espeak-bridge/` is an N-API port of
 `espeakbridge.c` (byte-identical phonemes). Prebuilds ship with the package
-(`npm run prebuild`, CI in `prebuilds.yml`); local build with
+(`npm run build:prebuilds`, CI in `prebuilds.yml`); local build with
 `npm run build:espeak-bridge` (needs `libespeak-ng-dev`). Without an addon
 it falls back to the `espeak-ng` CLI (~15ms/sentence). Set
 `PIPER_ESPEAK_BRIDGE=0` to force the CLI.

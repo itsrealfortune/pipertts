@@ -6,7 +6,43 @@
 #include <string.h>
 #include <node_api.h>
 
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <dlfcn.h>
+#endif
 #include <espeak-ng/speak_lib.h>
+
+// espeak_TextToPhonemesWithTerminator exists in espeak-ng >= 1.52. Older
+// headers may not declare it, so declare it locally (a duplicate declaration
+// is benign when headers already have it) and resolve it at runtime: systems
+// with an older library gracefully degrade to single-clause output instead
+// of failing to compile.
+typedef const char *(*espeak_ttpt_fn)(const void **textptr, int textmode,
+                                      int phonememode, int *terminator);
+const char *espeak_TextToPhonemesWithTerminator(const void **textptr,
+                                               int textmode, int phonememode,
+                                               int *terminator);
+
+static espeak_ttpt_fn g_ttpt = NULL;
+static int g_ttpt_resolved = 0;
+
+static espeak_ttpt_fn resolve_ttpt(void) {
+    if (!g_ttpt_resolved) {
+        g_ttpt_resolved = 1;
+#ifdef _WIN32
+        HMODULE lib = GetModuleHandleA("libespeak-ng.dll");
+        if (lib) {
+            g_ttpt = (espeak_ttpt_fn)GetProcAddress(lib,
+                                                   "espeak_TextToPhonemesWithTerminator");
+        }
+#else
+        g_ttpt = (espeak_ttpt_fn)dlsym(RTLD_DEFAULT,
+                                       "espeak_TextToPhonemesWithTerminator");
+#endif
+    }
+    return g_ttpt;
+}
 
 #define CLAUSE_INTONATION_FULL_STOP 0x00000000
 #define CLAUSE_INTONATION_COMMA 0x00001000
@@ -119,12 +155,31 @@ static napi_value js_get_phonemes(napi_env env, napi_callback_info info) {
     napi_create_array(env, &result);
     uint32_t idx = 0;
 
+    espeak_ttpt_fn ttpt = resolve_ttpt();
     const void *cursor = text_buf;
+    if (ttpt == NULL) {
+        // espeak-ng < 1.52: single clause, no terminator info.
+        const char *phonemes =
+            espeak_TextToPhonemes(&cursor, espeakCHARS_AUTO, espeakPHONEMES_IPA);
+        napi_value item, js_phonemes, js_term, js_eos;
+        napi_create_object(env, &item);
+        napi_create_string_utf8(env, phonemes ? phonemes : "", NAPI_AUTO_LENGTH,
+                                &js_phonemes);
+        napi_create_string_utf8(env, "", NAPI_AUTO_LENGTH, &js_term);
+        napi_get_boolean(env, false, &js_eos);
+        napi_set_named_property(env, item, "phonemes", js_phonemes);
+        napi_set_named_property(env, item, "terminator", js_term);
+        napi_set_named_property(env, item, "endOfSentence", js_eos);
+        napi_set_element(env, result, idx, item);
+        free(text_buf);
+        return result;
+    }
+
     // espeak_TextToPhonemesWithTerminator advances the pointer; it returns
     // NULL when input is exhausted (mirrors the python bridge while loop).
     while (cursor != NULL) {
         int terminator = 0;
-        const char *phonemes = espeak_TextToPhonemesWithTerminator(
+        const char *phonemes = ttpt(
             &cursor, espeakCHARS_AUTO, espeakPHONEMES_IPA, &terminator);
         if (phonemes == NULL) {
             phonemes = "";
