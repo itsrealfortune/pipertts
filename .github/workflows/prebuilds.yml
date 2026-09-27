@@ -19,9 +19,10 @@ jobs:
           - os: ubuntu-22.04-arm
             arch: arm64
             install: sudo apt-get update && sudo apt-get install -y espeak-ng libespeak-ng-dev
-          - os: windows-latest
-            arch: x64
-            install: choco install espeak-ng -y
+          # Windows: choco espeak-ng ships no dev headers, and building
+          # espeak-ng from source needs an MSVC CMake superbuild (see
+          # piper1-gpl libpiper). Windows users use the CLI fallback.
+          # Follow-up: build espeak-ng from source on windows-latest.
           - os: macos-latest
             arch: arm64
             install: brew install espeak-ng
