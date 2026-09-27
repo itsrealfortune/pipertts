@@ -281,6 +281,14 @@ npm test
 
 ## Changelog
 
+### 1.1.6 — Examples and hot-loop audit
+
+- `examples/example-native.ts`: same flow as `example.ts`, fully in-process.
+- `resolveModelPathFromOptions` now public (catalog ids for native users).
+- Performance audit: g2pw label building O(n²)→O(n), char lookups → Map/Set,
+  index-based wordize, bulk int16 writes, fused audio pipeline (≤1 LSB),
+  `matchAll` Thai runs, zero-copy WAV parse. Inference was already 99%+.
+
 ### 1.1.5 — Install fix
 
 - `npm i` failed: the `install` script was absent from the tarball.
