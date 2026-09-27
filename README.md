@@ -128,8 +128,10 @@ const mp3 = await tts.synthesize("Compressed.", { outputFormat: "mp3" });
 Run the example: `npx tsx examples/native.ts` (needs a model in `models/`).
 
 Supported `phoneme_type`: `espeak`, `text`, `hebrew` (Nakdimon ONNX + rules),
-`lithuanian` (espeak + stress dictionary). `pinyin`/`japanese`/`thai` throw
-an explicit error (need BERT/OpenJTalk/TLTK, not portable to pure TS).
+`lithuanian` (espeak + stress dictionary), `pinyin` (g2pw BERT ONNX +
+WordPiece, ~280MB download on first use into `./piper-data/g2pw/`).
+`japanese`/`thai` throw an explicit error (need OpenJTalk/TLTK, not
+portable to pure TS).
 
 Phonemizer data (Nakdimon, tashkeel, Lithuanian TSVs) auto-downloads once
 into `./piper-data/` (override with `nativeDataDir` or explicit paths).
@@ -147,8 +149,9 @@ it falls back to the `espeak-ng` CLI (~15ms/sentence). Set
 `PIPER_ESPEAK_BRIDGE=0` to force the CLI.
 
 > License note: `src/native/` ports piper1-gpl (GPL-3.0-or-later);
+> `src/native/chinese.ts` ports g2pw (Apache-2.0, Yi-Chang Chen);
 > the phonemizer data bundles keep their own licenses (tashkeel/hebrew:
-> GPL/MIT, Lithuanian TSVs: CC-BY-4.0).
+> GPL/MIT, Lithuanian TSVs: CC-BY-4.0, g2pw model: Apache-2.0).
 
 ## Module usage (ESM and CommonJS)
 

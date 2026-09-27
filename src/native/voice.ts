@@ -18,6 +18,7 @@ import {
 	type SynthesisConfig,
 } from "./config.js";
 import { ensureNativeDataBundle } from "./data.js";
+import { ChinesePhonemizer, chinesePhonemesToIds } from "./chinese.js";
 import { HebrewPhonemizer } from "./hebrew.js";
 import { createNativeSession, type NativeSession } from "./inference.js";
 import { LithuanianPhonemizer } from "./lithuanian.js";
@@ -59,6 +60,8 @@ export interface NativeTtsOptions {
 	tashkeelModelDir?: string;
 	/** Explicit Nakdimon model path or dir (skips download). */
 	nakdimonModelPath?: string;
+	/** Explicit g2pw model dir (skips download). */
+	g2pwModelDir?: string;
 	/** Explicit Lithuanian data dir with lt_*.tsv (skips download). */
 	lithuanianDataDir?: string;
 	/** Enable Arabic diacritization for `ar` voices (default: true). */
@@ -108,12 +111,14 @@ export class PiperNativeTTS {
 		tashkeelModelDir?: string;
 		nakdimonModelPath?: string;
 		lithuanianDataDir?: string;
+		g2pwModelDir?: string;
 		useTashkeel: boolean;
 		taskeenThreshold: number;
 	};
 	private tashkeel?: TashkeelDiacritizer | null;
 	private hebrew?: HebrewPhonemizer | null;
 	private lithuanian?: LithuanianPhonemizer | null;
+	private chinese?: ChinesePhonemizer | null;
 
 	private constructor(
 		config: PiperConfig,
@@ -125,6 +130,7 @@ export class PiperNativeTTS {
 			tashkeelModelDir?: string;
 			nakdimonModelPath?: string;
 			lithuanianDataDir?: string;
+			g2pwModelDir?: string;
 			useTashkeel: boolean;
 			taskeenThreshold: number;
 		},
@@ -166,6 +172,7 @@ export class PiperNativeTTS {
 				tashkeelModelDir: options.tashkeelModelDir,
 				nakdimonModelPath: options.nakdimonModelPath,
 				lithuanianDataDir: options.lithuanianDataDir,
+				g2pwModelDir: options.g2pwModelDir,
 				useTashkeel: options.useTashkeel ?? true,
 				taskeenThreshold: options.taskeenThreshold ?? 0.8,
 			},
@@ -189,6 +196,9 @@ export class PiperNativeTTS {
 		}
 		if (this.config.phonemeType === "lithuanian") {
 			return this.getLithuanian().then((l) => l.phonemize(text));
+		}
+		if (this.config.phonemeType === "pinyin") {
+			return this.getChinese().then((c) => c.phonemize(text));
 		}
 		const input =
 			this.config.espeakVoice === "ar" && this.resourceOptions.useTashkeel
@@ -288,6 +298,20 @@ export class PiperNativeTTS {
 		return this.lithuanian;
 	}
 
+	private async getChinese(): Promise<ChinesePhonemizer> {
+		if (!this.chinese) {
+			const explicit = this.resourceOptions.g2pwModelDir;
+			const dir =
+				explicit ?? path.join(this.resourceOptions.nativeDataDir, "g2pw");
+			if (!explicit) {
+				const { ensureG2pwModelDir } = await import("./chinese.js");
+				await ensureG2pwModelDir(dir);
+			}
+			this.chinese = await ChinesePhonemizer.load(dir);
+		}
+		return this.chinese;
+	}
+
 	async *synthesizeChunks(
 		text: string,
 		options: NativeSynthesizeOptions = {},
@@ -313,7 +337,11 @@ export class PiperNativeTTS {
 			if (phonemes.length === 0) {
 				continue;
 			}
-			const { ids } = phonemesToIds(phonemes, idMap);
+			// Pinyin voices use group-end padding (mirrors voice.py dispatch).
+			const { ids } =
+				this.config.phonemeType === "pinyin"
+					? chinesePhonemesToIds(phonemes, idMap)
+					: phonemesToIds(phonemes, idMap);
 			const speakerId = resolveSpeakerId(this.config, options.speakerId);
 			let audio = await this.session.run({
 				phonemeIds: ids,

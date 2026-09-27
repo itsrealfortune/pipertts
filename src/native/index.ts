@@ -37,6 +37,24 @@ export {
 	hebrewToIpa,
 } from "./hebrew.js";
 export { LithuanianPhonemizer } from "./lithuanian.js";
+export {
+	BertWordPieceTokenizer,
+	ChinesePhonemizer,
+	G2PWOnnxConverter,
+	PINYIN_GROUP_END_PHONEMES,
+	PINYIN_INITIALS,
+	PINYIN_PHONEME_TO_ID,
+	chinesePhonemesToIds,
+	compareCodepoints,
+	ensureG2pwModelDir,
+	normalizeG2pwSyllable,
+	splitInitialFinalTone,
+	splitZhSentences,
+	tokenizeAndMap,
+	wordizeAndMap,
+	zhNumberToWords,
+	zhNumbersToWords,
+} from "./chinese.js";
 export { transcodeAudio, isFfmpegAvailable } from "./transcode.js";
 export type { TranscodeFormat } from "./transcode.js";
 export { encodeOpusOgg, resampleMonoInt16 } from "./opus.js";
