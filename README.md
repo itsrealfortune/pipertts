@@ -131,8 +131,11 @@ Supported `phoneme_type`: `espeak`, `text`, `hebrew` (Nakdimon ONNX + rules),
 `lithuanian` (espeak + stress dictionary), `pinyin` (g2pw BERT ONNX +
 WordPiece, ~280MB download on first use into `./piper-data/g2pw/`),
 `thai` (real TLTK under Pyodide/WASM, ~20MB data into `./piper-data/tltk/`,
-first call takes a few seconds, later calls are fast).
-`japanese` throws an explicit error (needs OpenJTalk/mecab, native).
+first call takes a few seconds, later calls are fast),
+`japanese` (lindera-wasm + UniDic, ~200MB data into `./piper-data/unidic/`;
+segments exact, **no lexical pitch accent** — UniDic ships no accent data).
+
+All 7 `phoneme_type` values are now supported natively; no Python needed.
 
 Phonemizer data (Nakdimon, tashkeel, Lithuanian TSVs) auto-downloads once
 into `./piper-data/` (override with `nativeDataDir` or explicit paths).
@@ -152,6 +155,7 @@ it falls back to the `espeak-ng` CLI (~15ms/sentence). Set
 > License note: `src/native/` ports piper1-gpl (GPL-3.0-or-later);
 > `src/native/chinese.ts` ports g2pw (Apache-2.0, Yi-Chang Chen);
 > Thai runs TLTK (BSD-3-Clause, Chulalongkorn University) unmodified;
+> Japanese segments with lindera-wasm + UniDic (MIT, no accent data);
 > the phonemizer data bundles keep their own licenses (tashkeel/hebrew:
 > GPL/MIT, Lithuanian TSVs: CC-BY-4.0, g2pw model: Apache-2.0).
 

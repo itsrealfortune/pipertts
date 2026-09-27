@@ -45,6 +45,16 @@ export {
 	thNumbersToWords,
 } from "./thai.js";
 export {
+	JapanesePhonemizer,
+	ensureLinderaUnidicDir,
+	getLinderaTokenizer,
+	jaExpandNumbers,
+	jaNumberToKatakana,
+	katakanaToMorae,
+	moraeToPhonemes,
+	splitJaSentences,
+} from "./japanese.js";
+export {
 	BertWordPieceTokenizer,
 	ChinesePhonemizer,
 	G2PWOnnxConverter,

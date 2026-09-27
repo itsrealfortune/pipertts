@@ -248,6 +248,7 @@ const SUPPORTED_NATIVE_TYPES = new Set([
 	"lithuanian",
 	"pinyin",
 	"thai",
+	"japanese",
 ]);
 
 /**
@@ -316,11 +317,9 @@ export function espeakBridgePhonemizeWithRawBlocks(
 	return phonemes;
 }
 
-const UNSUPPORTED_REASONS: Record<string, string> = {
-	japanese: "requires OpenJTalk/mecab (native); not portable to pure TS",
-};
+const UNSUPPORTED_REASONS: Record<string, string> = {};
 
-/** Throws for phoneme types without a native port (japanese needs native models). */
+/** All known phoneme types have a native port. */
 export function assertSupportedPhonemeType(phonemeType: string): void {
 	if (!SUPPORTED_NATIVE_TYPES.has(phonemeType)) {
 		const reason = UNSUPPORTED_REASONS[phonemeType] ?? "unknown phoneme type";
