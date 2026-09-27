@@ -393,8 +393,6 @@ export class BertWordPieceTokenizer {
 		if (chars.length > this.maxChars) {
 			return [this.unkToken];
 		}
-		const isBadEnd = chars.length; // placeholder to keep structure clear
-		void isBadEnd;
 		const subTokens: string[] = [];
 		let start = 0;
 		while (start < chars.length) {
