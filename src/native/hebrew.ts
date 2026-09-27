@@ -163,9 +163,9 @@ export class NakdimonDiacritizer {
 			]),
 		};
 		const results = await this.session.run(feeds);
-		const nOut = Array.from(results["N"]?.data ?? []);
-		const dOut = Array.from(results["D"]?.data ?? []);
-		const sOut = Array.from(results["S"]?.data ?? []);
+		const nOut = Array.from(results.N?.data ?? []);
+		const dOut = Array.from(results.D?.data ?? []);
+		const sOut = Array.from(results.S?.data ?? []);
 		const n = letters.length;
 		const argmax = (data: number[], classes: number, row: number): number => {
 			let best = 0;

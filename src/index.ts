@@ -4,8 +4,8 @@ export {
 	getPiperModelsByLanguage,
 	listPiperModels,
 } from "./catalog.js";
-export { PiperTTS } from "./piper-tts.js";
 export { PiperNativeTTS } from "./native/voice.js";
+export { PiperTTS } from "./piper-tts.js";
 export type {
 	LengthScale,
 	NoiseScale,

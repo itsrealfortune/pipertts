@@ -9,9 +9,9 @@
  * reach parity.
  */
 
+import { execFile } from "node:child_process";
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { execFile } from "node:child_process";
 import { DEFAULT_PHONEME_ID_MAP } from "./phoneme-ids.js";
 
 /** Tone digits 1=mid, 2=low, 3=falling, 4=high, 5=rising. */
@@ -21,7 +21,7 @@ const THAI_TLTK_TO_IPA: Record<string, string> = { ᴐ: "ɔ" };
 const THAI_CHUNK_MARKER = "<s/>";
 const THAI_RUN = /[ก-ฮะ-ฺเ-๎]+/gu;
 const THAI_ET_CETERA: [string, string] = ["ฯลฯ", "ละ"];
-const THAI_SILENT = /[ฯ๏๚๛\u200b\u200c\u200d\ufeff]/gu;
+const THAI_SILENT = /[ฯ๏๚๛​﻿]|‌|‍/gu;
 const THAI_OBSOLETE = new Map([
 	["ฃ", "ข"],
 	["ฅ", "ค"],
@@ -341,7 +341,11 @@ export class ThaiPhonemizer {
 		THAI_RUN.lastIndex = 0;
 		let match: RegExpExecArray | null;
 		const runRe = new RegExp(THAI_RUN.source, THAI_RUN.flags);
-		while ((match = runRe.exec(normalized)) !== null) {
+		for (
+			match = runRe.exec(normalized);
+			match !== null;
+			match = runRe.exec(normalized)
+		) {
 			phonemes.push(
 				...punctuationPhonemes(normalized.slice(position, match.index)),
 			);

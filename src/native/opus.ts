@@ -84,7 +84,9 @@ function buildOggPage(
 	header.writeUInt32LE(seqNo >>> 0, 18);
 	header.writeUInt32LE(0, 22); // checksum placeholder
 	header.writeUInt8(lacing.length, 26);
-	lacing.forEach((v, i) => header.writeUInt8(v, 27 + i));
+	lacing.forEach((v, i) => {
+		header.writeUInt8(v, 27 + i);
+	});
 	const page = Buffer.concat([header, ...packets.map((p) => Buffer.from(p))]);
 	page.writeUInt32LE(crc32(page), 22);
 	return page;
@@ -130,6 +132,7 @@ export async function encodeOpusOgg(
 		channels: number,
 		application: number,
 	) => OpusEncoder & { Application?: unknown };
+	let appAudio: number;
 	try {
 		const { createRequire } = await import("node:module");
 		const mod = createRequire(import.meta.url)("opusscript") as {
@@ -137,7 +140,7 @@ export async function encodeOpusOgg(
 			new (rate: number, channels: number, app: number): OpusEncoder;
 		};
 		OpusScript = mod;
-		var appAudio = mod.Application.AUDIO;
+		appAudio = mod.Application.AUDIO;
 	} catch (error) {
 		throw new Error(
 			`PiperNative: opus without ffmpeg needs the "opusscript" package (${(error as Error).message}).`,

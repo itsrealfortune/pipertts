@@ -23,7 +23,7 @@ export const JA_PAUSE = ",";
 export const JA_DECLARATIVE_END = ".";
 export const JA_INTERROGATIVE_END = "?";
 
-const JA_SENTENCE_END = /[。．！？!?]+[」』）】〉》”’"'\)\]\s]*/gu;
+const JA_SENTENCE_END = /[。．！？!?]+[」』）】〉》”’"')\]\s]*/gu;
 
 function jaIsDecimalPoint(
 	text: string,
@@ -46,7 +46,7 @@ export function splitJaSentences(text: string): string[] {
 	JA_SENTENCE_END.lastIndex = 0;
 	let match: RegExpExecArray | null;
 	const re = new RegExp(JA_SENTENCE_END.source, JA_SENTENCE_END.flags);
-	while ((match = re.exec(text)) !== null) {
+	for (match = re.exec(text); match !== null; match = re.exec(text)) {
 		// Lone "." between digits is a decimal point, not a boundary.
 		if (
 			match[0] === "." &&
@@ -245,7 +245,6 @@ const JA_COMBOS: Record<string, [string, string]> = {
 };
 
 const JA_SMALL = new Set("ァィゥェォャュョ");
-const JA_DIGraph_SMALL = new Set("ャュョ");
 
 /**
  * Converts a katakana reading to morae. Long vowels stay two morae and

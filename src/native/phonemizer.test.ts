@@ -32,10 +32,7 @@ describe("raw blocks and text", () => {
 
 	it("merges known vowel clusters longest-first", () => {
 		const clusters = new Set(["aɪ", "aʊ"]);
-		expect(mergeVowelClusters(["a", "ɪ", "x"], clusters)).toEqual([
-			"aɪ",
-			"x",
-		]);
+		expect(mergeVowelClusters(["a", "ɪ", "x"], clusters)).toEqual(["aɪ", "x"]);
 		expect(mergeVowelClusters(["a", "b"], null)).toEqual(["a", "b"]);
 	});
 });
@@ -49,27 +46,46 @@ describe("espeakBridgePhonemize (stubbed bridge)", () => {
 	};
 
 	it("appends terminators and space after comma", () => {
-		const sentences = espeakBridgePhonemize("Hello, world.", "en-us", null, stub);
+		const sentences = espeakBridgePhonemize(
+			"Hello, world.",
+			"en-us",
+			null,
+			stub,
+		);
 		expect(sentences).toHaveLength(1);
 		expect(sentences[0]?.join("")).toBe("həlˈoʊ, wˈɜːld.");
 	});
 
 	it("strips (lang) flags", () => {
 		const flagStub = {
-			phonemize: () => [{ phonemes: "a(lang)b", terminator: "", endOfSentence: true }],
+			phonemize: () => [
+				{ phonemes: "a(lang)b", terminator: "", endOfSentence: true },
+			],
 		};
-		expect(espeakBridgePhonemize("x", "en-us", null, flagStub)[0]?.join("")).toBe("ab");
+		expect(
+			espeakBridgePhonemize("x", "en-us", null, flagStub)[0]?.join(""),
+		).toBe("ab");
 	});
 });
 
 describe("assertSupportedPhonemeType", () => {
 	it("accepts all 7 ported types", () => {
-		for (const t of ["espeak", "text", "hebrew", "lithuanian", "pinyin", "thai", "japanese"]) {
+		for (const t of [
+			"espeak",
+			"text",
+			"hebrew",
+			"lithuanian",
+			"pinyin",
+			"thai",
+			"japanese",
+		]) {
 			expect(() => assertSupportedPhonemeType(t)).not.toThrow();
 		}
 	});
 
 	it("rejects unknown types", () => {
-		expect(() => assertSupportedPhonemeType("klingon")).toThrow(/not supported/);
+		expect(() => assertSupportedPhonemeType("klingon")).toThrow(
+			/not supported/,
+		);
 	});
 });

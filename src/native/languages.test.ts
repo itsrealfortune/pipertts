@@ -1,16 +1,16 @@
 import { describe, expect, it } from "bun:test";
 import {
+	BertWordPieceTokenizer,
 	chinesePhonemesToIds,
 	compareCodepoints,
 	normalizeG2pwSyllable,
 	splitInitialFinalTone,
 	splitZhSentences,
 	wordizeAndMap,
-	zhNumberToWords,
 	zhNumbersToWords,
+	zhNumberToWords,
 } from "./chinese.js";
-import { BertWordPieceTokenizer } from "./chinese.js";
-import { thNumberToWords, thNumbersToWords } from "./thai.js";
+import { hebrewToIpa, hebrewWordToIpa } from "./hebrew.js";
 import {
 	jaExpandNumbers,
 	jaNumberToKatakana,
@@ -18,13 +18,13 @@ import {
 	moraeToPhonemes,
 	splitJaSentences,
 } from "./japanese.js";
-import { hebrewToIpa, hebrewWordToIpa } from "./hebrew.js";
 import {
 	loadLtDictionary,
 	ltIpaVowelGroups,
 	ltPlaceAccent,
 	ltVocativeAccent,
 } from "./lithuanian.js";
+import { thNumbersToWords, thNumberToWords } from "./thai.js";
 
 describe("chinese tables", () => {
 	it("splits initial/final/tone", () => {
@@ -56,7 +56,11 @@ describe("chinese tables", () => {
 	it("wordizes ascii runs and single chars", () => {
 		const { words, word2text } = wordizeAndMap("Hi 你好");
 		expect(words).toEqual(["Hi", "你", "好"]);
-		expect(word2text).toEqual([[0, 2], [3, 4], [4, 5]]);
+		expect(word2text).toEqual([
+			[0, 2],
+			[3, 4],
+			[4, 5],
+		]);
 	});
 });
 
@@ -107,8 +111,17 @@ describe("splitZhSentences", () => {
 
 describe("BertWordPieceTokenizer", () => {
 	it("tokenizes with longest-match and ## continuations", () => {
-		const tok = new BertWordPieceTokenizer(["[UNK]", "hello", "##world", "##s"]);
-		expect(tok.tokenizeWord("helloworlds")).toEqual(["hello", "##world", "##s"]);
+		const tok = new BertWordPieceTokenizer([
+			"[UNK]",
+			"hello",
+			"##world",
+			"##s",
+		]);
+		expect(tok.tokenizeWord("helloworlds")).toEqual([
+			"hello",
+			"##world",
+			"##s",
+		]);
 		expect(tok.tokenizeWord("zzz")).toEqual(["[UNK]"]);
 		expect(tok.convertTokensToIds(["hello", "[UNK]"])).toEqual([1, 0]);
 	});
@@ -141,16 +154,35 @@ describe("thai numbers (RBNF-identical)", () => {
 describe("japanese morae engine", () => {
 	it("maps basic kana", () => {
 		expect(moraeToPhonemes(katakanaToMorae("コンニチワ"))).toEqual([
-			"k", "o", "ɴ", "n", "i", "t", "ɕ", "i", "w", "a",
+			"k",
+			"o",
+			"ɴ",
+			"n",
+			"i",
+			"t",
+			"ɕ",
+			"i",
+			"w",
+			"a",
 		]);
 	});
 
 	it("handles palatalized morae, geminates, long vowels", () => {
 		expect(moraeToPhonemes(katakanaToMorae("キャッシュ"))).toEqual([
-			"k", "ʲ", "a", "ʔ", "ɕ", "ɯ",
+			"k",
+			"ʲ",
+			"a",
+			"ʔ",
+			"ɕ",
+			"ɯ",
 		]);
 		expect(moraeToPhonemes(katakanaToMorae("ガッコウ"))).toEqual([
-			"ɡ", "a", "ʔ", "k", "o", "ɯ",
+			"ɡ",
+			"a",
+			"ʔ",
+			"k",
+			"o",
+			"ɯ",
 		]);
 	});
 
@@ -166,11 +198,9 @@ describe("japanese morae engine", () => {
 	});
 
 	it("splits sentences with decimal guard", () => {
-		expect(splitJaSentences("今日は良い天気です。これは本ですか？1.5倍です。")).toEqual([
-			"今日は良い天気です。",
-			"これは本ですか？",
-			"1.5倍です。",
-		]);
+		expect(
+			splitJaSentences("今日は良い天気です。これは本ですか？1.5倍です。"),
+		).toEqual(["今日は良い天気です。", "これは本ですか？", "1.5倍です。"]);
 	});
 });
 
@@ -187,7 +217,9 @@ describe("lithuanian accent logic", () => {
 	});
 
 	it("loads the TSV dictionary format", () => {
-		const dict = loadLtDictionary("abariaus\t1\tˌ\ndaug\t0\tˈ\t0\n# comment\nbadline\n");
+		const dict = loadLtDictionary(
+			"abariaus\t1\tˌ\ndaug\t0\tˈ\t0\n# comment\nbadline\n",
+		);
 		expect(dict.get("abariaus")).toEqual({ groupIndex: 1, mark: "ˌ" });
 		expect(dict.get("daug")).toEqual({ groupIndex: 0, mark: "ˈ" });
 		expect(dict.has("badline")).toBe(false);

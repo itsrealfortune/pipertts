@@ -7,8 +7,8 @@
  */
 
 import * as fs from "node:fs";
-import { espeakBridgePhonemize, espeakCliPhonemize } from "./phonemizer.js";
 import { getEspeakBridge } from "./espeak-bridge/loader.js";
+import { espeakBridgePhonemize, espeakCliPhonemize } from "./phonemizer.js";
 
 /** espeak-ng voice id used for Lithuanian base IPA. Port of phonemize_lithuanian.py. */
 export const LT_ESPEAK_VOICE = "lt";
@@ -215,7 +215,7 @@ export function ltPlaceAccent(
 	) {
 		return ipa;
 	}
-	let p = groups[groupIndex] as number;
+	const p = groups[groupIndex] as number;
 	let i = p - 1;
 	while (i >= 0 && LT_CONSONANT_MODIFIERS.includes(clean[i] as string)) {
 		i -= 1;
@@ -330,7 +330,7 @@ export class LithuanianPhonemizer {
 			: await espeakCliPhonemize(word, LT_ESPEAK_VOICE, null, {
 					espeakBinary: this.espeakBinary,
 				});
-		let ipa = sentences
+		const ipa = sentences
 			.map((s) => s.join(""))
 			.join("")
 			.trim()

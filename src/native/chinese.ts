@@ -7,14 +7,10 @@
  * vocab downloads from Hugging Face.
  */
 
+import { execFile } from "node:child_process";
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { execFile } from "node:child_process";
-import {
-	createRawOrtSession,
-	type RawOrtSession,
-	type OrtLike,
-} from "./inference.js";
+import type { OrtLike, RawOrtSession } from "./inference.js";
 
 // ---------- Pinyin tables (from phonemize_chinese.py) ----------
 
@@ -185,10 +181,10 @@ export function chinesePhonemesToIds(
 		}
 		ids.push(...mapped);
 		if (PINYIN_GROUP_END_PHONEMES.has(phoneme)) {
-			ids.push(...(idMap["_"] ?? []));
+			ids.push(...(idMap._ ?? []));
 		}
 	}
-	ids.push(...(idMap["$"] ?? []));
+	ids.push(...(idMap.$ ?? []));
 	return { ids, skipped };
 }
 
@@ -326,7 +322,7 @@ function cleanText(text: string): string {
 }
 
 function basicTokenize(text: string, doLowerCase = true): string[] {
-	let t = cleanText(text);
+	const t = cleanText(text);
 	let spaced = "";
 	for (const ch of t) {
 		if (isCjkChar(ch.codePointAt(0) as number)) {
@@ -401,7 +397,7 @@ export class BertWordPieceTokenizer {
 			while (start < end) {
 				let substr = chars.slice(start, end).join("");
 				if (start > 0) {
-					substr = "##" + substr;
+					substr = `##${substr}`;
 				}
 				if (this.vocab.has(substr)) {
 					cur = substr;
@@ -993,7 +989,7 @@ export class G2PWOnnxConverter {
 				),
 			};
 			const results = await this.session.run(feeds);
-			const probs = Array.from(results["probs"]?.data ?? []);
+			const probs = Array.from(results.probs?.data ?? []);
 			const numLabels = this.labels.length;
 			const batchCount = probs.length / numLabels;
 			for (let b = 0; b < batchCount; b++) {

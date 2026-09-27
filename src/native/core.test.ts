@@ -1,16 +1,16 @@
 import { describe, expect, it } from "bun:test";
 import {
+	piperConfigFromDict,
+	resolveSpeakerId,
+	resolveSynthesisParams,
+} from "./config.js";
+import {
 	BOS,
 	DEFAULT_PHONEME_ID_MAP,
 	EOS,
 	PAD,
 	phonemesToIds,
 } from "./phoneme-ids.js";
-import {
-	piperConfigFromDict,
-	resolveSpeakerId,
-	resolveSynthesisParams,
-} from "./config.js";
 import {
 	applyVolumeAndClip,
 	chunksToRaw,
@@ -80,9 +80,9 @@ describe("piperConfigFromDict", () => {
 			noiseScale: 0.5,
 			noiseWScale: 0.9,
 		});
-		expect(
-			resolveSynthesisParams(cfg, { lengthScale: 0.8 }).lengthScale,
-		).toBe(0.8);
+		expect(resolveSynthesisParams(cfg, { lengthScale: 0.8 }).lengthScale).toBe(
+			0.8,
+		);
 	});
 
 	it("resolves speaker ids", () => {

@@ -7,22 +7,21 @@
  */
 
 import * as fs from "node:fs";
-import * as os from "node:os";
 import * as path from "node:path";
+import { ChinesePhonemizer, chinesePhonemesToIds } from "./chinese.js";
 import {
+	type PiperConfig,
+	type PiperConfigDict,
 	piperConfigFromDict,
 	resolveSpeakerId,
 	resolveSynthesisParams,
-	type PiperConfig,
-	type PiperConfigDict,
 	type SynthesisConfig,
 } from "./config.js";
 import { ensureNativeDataBundle } from "./data.js";
-import { ChinesePhonemizer, chinesePhonemesToIds } from "./chinese.js";
+import { getEspeakBridge } from "./espeak-bridge/loader.js";
 import { HebrewPhonemizer } from "./hebrew.js";
-import { JapanesePhonemizer } from "./japanese.js";
-import { ThaiPhonemizer } from "./thai.js";
 import { createNativeSession, type NativeSession } from "./inference.js";
+import { JapanesePhonemizer } from "./japanese.js";
 import { LithuanianPhonemizer } from "./lithuanian.js";
 import { phonemesToIds } from "./phoneme-ids.js";
 import {
@@ -31,8 +30,8 @@ import {
 	espeakCliPhonemize,
 	textToPhonemes,
 } from "./phonemizer.js";
-import { getEspeakBridge } from "./espeak-bridge/loader.js";
 import { TashkeelDiacritizer } from "./tashkeel.js";
+import { ThaiPhonemizer } from "./thai.js";
 import {
 	applyVolumeAndClip,
 	chunksToRaw,
@@ -376,7 +375,7 @@ export class PiperNativeTTS {
 		// Lithuanian voices append {"ˋ": [166]} to the default map; add it
 		// when missing so ids resolve even with a bare default map.
 		let idMap = this.config.phonemeIdMap;
-		if (this.config.phonemeType === "lithuanian" && !idMap["ˋ"]) {
+		if (this.config.phonemeType === "lithuanian" && !idMap.ˋ) {
 			idMap = { ...idMap, ˋ: [166] };
 		}
 		for (const phonemes of sentences) {

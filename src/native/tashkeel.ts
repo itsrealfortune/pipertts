@@ -62,10 +62,10 @@ async function createTashkeelSession(
 			};
 			const results = await session.run(feeds);
 			const predictions = Array.from(
-				(results["predictions"] as { data: ArrayLike<number> }).data,
+				(results.predictions as { data: ArrayLike<number> }).data,
 			).map((v) => v & 0xff);
 			const logits = Array.from(
-				(results["logits"] as { data: ArrayLike<number> }).data,
+				(results.logits as { data: ArrayLike<number> }).data,
 			);
 			return { targetIds: predictions, logits };
 		},

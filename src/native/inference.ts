@@ -87,7 +87,7 @@ export async function createNativeSession(
 		graphOptimizationLevel: "all",
 	};
 	if (options?.numThreads !== undefined) {
-		sessionOptions["intraOpNumThreads"] = options.numThreads;
+		sessionOptions.intraOpNumThreads = options.numThreads;
 	}
 	const session = await ort.InferenceSession.create(modelPath, sessionOptions);
 
@@ -107,7 +107,7 @@ export async function createNativeSession(
 				scales: new ort.Tensor("float32", Float32Array.from(scales), [3]),
 			};
 			if (speakerId !== null) {
-				feeds["sid"] = new ort.Tensor(
+				feeds.sid = new ort.Tensor(
 					"int64",
 					BigInt64Array.from([BigInt(speakerId)]),
 					[1],
@@ -115,7 +115,7 @@ export async function createNativeSession(
 			}
 			const results = await session.run(feeds);
 			const audio =
-				results["output"] ?? results["audio"] ?? Object.values(results)[0];
+				results.output ?? results.audio ?? Object.values(results)[0];
 			const data = (audio as { data: ArrayLike<number> }).data;
 			return Float32Array.from(data as ArrayLike<number>);
 		},

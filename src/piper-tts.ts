@@ -1,9 +1,9 @@
 import { type SpawnOptions, spawn } from "node:child_process";
+import { randomUUID } from "node:crypto";
 import * as fs from "node:fs";
 import * as fsp from "node:fs/promises";
 import * as os from "node:os";
 import * as path from "node:path";
-import { randomUUID } from "node:crypto";
 import { resolveModelPathFromOptions } from "./catalog.js";
 import { resolveExecutable, resolveSystemCommand } from "./runtime.js";
 import type {
