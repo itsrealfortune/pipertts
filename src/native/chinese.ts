@@ -245,33 +245,46 @@ export function wordizeAndMap(text: string): WordizeResult {
 	const words: string[] = [];
 	const text2word: (number | null)[] = [];
 	const word2text: [number, number][] = [];
-	let rest = text;
-	while (rest.length > 0) {
-		const spaceMatch = rest.match(/^ +/);
-		if (spaceMatch) {
-			const spaces = spaceMatch[0];
-			for (let i = 0; i < spaces.length; i++) {
+	// Code-point iteration (matches Python len/slicing, O(n) single pass).
+	const chars = [...text];
+	let pos = 0;
+	const isAsciiAlnum = (c: string): boolean => {
+		const cp = c.codePointAt(0) as number;
+		return (
+			(cp >= 48 && cp <= 57) ||
+			(cp >= 65 && cp <= 90) ||
+			(cp >= 97 && cp <= 122)
+		);
+	};
+	while (pos < chars.length) {
+		const c = chars[pos] as string;
+		if (c === " ") {
+			let end = pos;
+			while (end < chars.length && chars[end] === " ") {
+				end++;
+			}
+			for (let i = pos; i < end; i++) {
 				text2word.push(null);
 			}
-			rest = rest.slice(spaces.length);
+			pos = end;
 			continue;
 		}
-		const enMatch = rest.match(/^[a-zA-Z0-9]+/);
-		if (enMatch) {
-			const enWord = enMatch[0];
-			const start = text2word.length;
-			word2text.push([start, start + enWord.length]);
-			for (let i = 0; i < enWord.length; i++) {
+		if (isAsciiAlnum(c)) {
+			let end = pos;
+			while (end < chars.length && isAsciiAlnum(chars[end] as string)) {
+				end++;
+			}
+			word2text.push([pos, end]);
+			for (let i = pos; i < end; i++) {
 				text2word.push(words.length);
 			}
-			words.push(enWord);
-			rest = rest.slice(enWord.length);
+			words.push(chars.slice(pos, end).join(""));
+			pos = end;
 		} else {
-			const start = text2word.length;
-			word2text.push([start, start + 1]);
+			word2text.push([pos, pos + 1]);
 			text2word.push(words.length);
-			words.push(rest[0] as string);
-			rest = rest.slice(1);
+			words.push(c);
+			pos += 1;
 		}
 	}
 	return { words, text2word, word2text };
@@ -481,10 +494,11 @@ export function getPhonemeLabels(polyphonicChars: [string, string][]): {
 } {
 	const labelSet = new Set(polyphonicChars.map(([, phoneme]) => phoneme));
 	const labels = [...labelSet].sort(compareCodepoints);
+	const labelIndex = new Map(labels.map((label, i) => [label, i]));
 	const char2phonemes = new Map<string, number[]>();
 	for (const [char, phoneme] of polyphonicChars) {
 		const arr = char2phonemes.get(char) ?? [];
-		arr.push(labels.indexOf(phoneme));
+		arr.push(labelIndex.get(phoneme) as number);
 		char2phonemes.set(char, arr);
 	}
 	return { labels, char2phonemes };
@@ -533,7 +547,7 @@ export function buildG2pwSample(
 	tokenizer: BertWordPieceTokenizer,
 	labels: string[],
 	char2phonemes: Map<string, number[]>,
-	chars: string[],
+	charIndex: Map<string, number>,
 	text: string,
 	queryId: number,
 	options: FeatureBuilderOptions = {},
@@ -599,7 +613,7 @@ export function buildG2pwSample(
 		tokenTypeIds: new Array(processedTokens.length).fill(0),
 		attentionMask: new Array(processedTokens.length).fill(1),
 		phonemeMask,
-		charId: chars.indexOf(queryChar),
+		charId: charIndex.get(queryChar) ?? -1,
 		positionId: (pos as number) + 1,
 	};
 }
@@ -768,7 +782,8 @@ export class G2PWOnnxConverter {
 	private readonly tokenizer: BertWordPieceTokenizer;
 	private readonly labels: string[];
 	private readonly char2phonemes: Map<string, number[]>;
-	private readonly chars: string[];
+	private readonly charSet: Set<string>;
+	private readonly charIndex: Map<string, number>;
 	private readonly monophonic: Map<string, string>;
 	private readonly charBopomofo: Record<string, string[]>;
 	private readonly bopomofoToPinyin: Record<string, string>;
@@ -783,7 +798,8 @@ export class G2PWOnnxConverter {
 		tokenizer: BertWordPieceTokenizer,
 		labels: string[],
 		char2phonemes: Map<string, number[]>,
-		chars: string[],
+		charIndex: Map<string, number>,
+		charSet: Set<string>,
 		monophonic: Map<string, string>,
 		charBopomofo: Record<string, string[]>,
 		bopomofoToPinyin: Record<string, string>,
@@ -797,7 +813,8 @@ export class G2PWOnnxConverter {
 		this.tokenizer = tokenizer;
 		this.labels = labels;
 		this.char2phonemes = char2phonemes;
-		this.chars = chars;
+		this.charIndex = charIndex;
+		this.charSet = charSet;
 		this.monophonic = monophonic;
 		this.charBopomofo = charBopomofo;
 		this.bopomofoToPinyin = bopomofoToPinyin;
@@ -854,7 +871,8 @@ export class G2PWOnnxConverter {
 			BertWordPieceTokenizer.loadVocabFile(files.vocabPath),
 			labels,
 			char2phonemes,
-			chars,
+			new Map(chars.map((c, i) => [c, i])),
+			new Set(chars),
 			mono,
 			charBopomofo,
 			bopomofoToPinyin,
@@ -879,7 +897,6 @@ export class G2PWOnnxConverter {
 	}
 
 	/** Pinyin (or null for punctuation) per character per sentence. */
-	/** Pinyin (or null for punctuation) per character per sentence. */
 	async convert(sentences: string | string[]): Promise<(string | null)[][]> {
 		const list = typeof sentences === "string" ? [sentences] : sentences;
 		const converted = list.map((s) => this.convertS2t(s));
@@ -890,7 +907,7 @@ export class G2PWOnnxConverter {
 		converted.forEach((sentence, sentId) => {
 			const row: (string | null)[] = new Array([...sentence].length).fill(null);
 			[...sentence].forEach((char, i) => {
-				if (this.chars.includes(char)) {
+				if (this.charSet.has(char)) {
 					texts.push(sentence);
 					queryIds.push(i);
 					sentIds.push(sentId);
@@ -921,7 +938,7 @@ export class G2PWOnnxConverter {
 				this.tokenizer,
 				this.labels,
 				this.char2phonemes,
-				this.chars,
+				this.charIndex,
 				text,
 				truncQueryIds[idx] as number,
 				{ useMask: this.useMask },

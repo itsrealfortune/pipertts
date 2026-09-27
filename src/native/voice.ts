@@ -32,13 +32,7 @@ import {
 } from "./phonemizer.js";
 import { TashkeelDiacritizer } from "./tashkeel.js";
 import { ThaiPhonemizer } from "./thai.js";
-import {
-	applyVolumeAndClip,
-	chunksToRaw,
-	chunksToWav,
-	floatToInt16Bytes,
-	normalizeAudio,
-} from "./wav.js";
+import { chunksToRaw, chunksToWav, processAudioToInt16 } from "./wav.js";
 
 /** One synthesized sentence: PCM plus phoneme trace (mirrors piper1-gpl voice.py). */
 export interface NativeAudioChunk {
@@ -388,24 +382,22 @@ export class PiperNativeTTS {
 					? chinesePhonemesToIds(phonemes, idMap)
 					: phonemesToIds(phonemes, idMap);
 			const speakerId = resolveSpeakerId(this.config, options.speakerId);
-			let audio = await this.session.run({
+			const audio = await this.session.run({
 				phonemeIds: ids,
 				scales: [noiseScale, lengthScale, noiseWScale],
 				speakerId,
 			});
-			if (normalizeAudioFlag) {
-				audio = normalizeAudio(audio);
-			}
-			if (volume !== 1.0) {
-				audio = applyVolumeAndClip(audio, volume);
-			} else {
-				audio = applyVolumeAndClip(audio, 1.0);
-			}
+			const pcm16 = Buffer.from(
+				processAudioToInt16(audio, {
+					normalize: normalizeAudioFlag,
+					volume,
+				}).buffer,
+			);
 			yield {
 				sampleRate: this.config.sampleRate,
 				phonemes,
 				phonemeIds: ids,
-				pcm16: floatToInt16Bytes(audio),
+				pcm16,
 			};
 		}
 	}

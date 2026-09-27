@@ -87,6 +87,7 @@ export {
 	chunksToWav,
 	floatToInt16Bytes,
 	normalizeAudio,
+	processAudioToInt16,
 	silenceBytes,
 	writeWavHeader,
 } from "./wav.js";

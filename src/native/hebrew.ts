@@ -49,6 +49,7 @@ const ENDINGS_TO_REGULAR = new Map(
 	[..."ךםןףץ"].map((c, i) => [c, [..."כמנפצ"][i] as string]),
 );
 const LETTER_CHARS = ["", ...SPECIAL_TOKENS, ...VALID_LETTERS];
+const VALID_LETTER_SET = new Set(VALID_LETTERS);
 const NIQQUD_CHARS = ["", ...NIQQUD_TABLE];
 const DAGESH_CHARS = ["", ...DAGESH_TABLE];
 const SIN_CHARS = ["", ...NIQQUD_SIN];
@@ -60,7 +61,7 @@ function removeNiqqud(text: string): string {
 }
 
 function normalizeChar(c: string): string {
-	if (VALID_LETTERS.includes(c)) {
+	if (VALID_LETTER_SET.has(c)) {
 		return c;
 	}
 	const ending = ENDINGS_TO_REGULAR.get(c);
@@ -98,7 +99,7 @@ function normalizeChar(c: string): string {
 }
 
 function canDagesh(letter: string): boolean {
-	return "בגדהוזטיכלמנספצקשתךף".includes(letter);
+	return DAGESHABLE.has(letter);
 }
 
 function canSin(letter: string): boolean {
@@ -106,8 +107,11 @@ function canSin(letter: string): boolean {
 }
 
 function canNiqqud(letter: string): boolean {
-	return "אבגדהוזחטיכלמנסעפצקרשתךן".includes(letter);
+	return NIQQUDABLE.has(letter);
 }
+
+const DAGESHABLE = new Set([..."בגדהוזטיכלמנספצקשתךף"]);
+const NIQQUDABLE = new Set([..."אבגדהוזחטיכלמנסעפצקרשתךן"]);
 
 /** Nakdimon ONNX diacritizer restoring Hebrew niqqud. Port of hebrew/__init__.py. */
 export class NakdimonDiacritizer {

@@ -139,4 +139,48 @@ describe("wav helpers", () => {
 		const raw = chunksToRaw([a, b], 22050, 0);
 		expect(raw).toEqual(Buffer.concat([a, b]));
 	});
+
+	it("fused processAudioToInt16 matches the staged pipeline (±1 LSB)", async () => {
+		const { processAudioToInt16 } = await import("./wav.js");
+		// Deterministic pseudo-random incl. edge values.
+		let seed = 123456789;
+		const rand = (): number => {
+			seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+			return seed / 0x7fffffff;
+		};
+		const samples = new Float32Array(20000);
+		for (let i = 0; i < samples.length; i++) {
+			samples[i] = rand() * 4 - 2;
+		}
+		samples[0] = 0;
+		samples[1] = 1;
+		samples[2] = -1;
+		samples[3] = 0.5;
+		for (const volume of [0.5, 1.0, 1.7]) {
+			for (const normalize of [true, false]) {
+				const staged = floatToInt16Bytes(
+					applyVolumeAndClip(
+						normalize ? normalizeAudio(samples) : samples,
+						volume,
+					),
+				);
+				const fusedInt16 = processAudioToInt16(samples, { normalize, volume });
+				const fused = Buffer.from(
+					fusedInt16.buffer,
+					fusedInt16.byteOffset,
+					fusedInt16.byteLength,
+				);
+				// The fused path skips one intermediate float32 rounding, so
+				// rare samples (only at high gain) differ by 1 LSB (-90dB).
+				let maxDiff = 0;
+				for (let i = 0; i < staged.length; i += 2) {
+					maxDiff = Math.max(
+						maxDiff,
+						Math.abs(staged.readInt16LE(i) - fused.readInt16LE(i)),
+					);
+				}
+				expect(maxDiff).toBeLessThanOrEqual(1);
+			}
+		}
+	});
 });

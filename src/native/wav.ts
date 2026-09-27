@@ -42,16 +42,69 @@ export function applyVolumeAndClip(
 
 /** Converts float samples to little-endian int16 PCM bytes (x32767). Port of `voice.py` int16 conversion. */
 export function floatToInt16Bytes(samples: Float32Array): Buffer {
-	const buffer = Buffer.alloc(samples.length * 2);
+	const int16 = floatToInt16(samples);
+	return Buffer.from(int16.buffer, int16.byteOffset, int16.byteLength);
+}
+
+function floatToInt16(samples: Float32Array): Int16Array {
+	const out = new Int16Array(samples.length);
 	for (let i = 0; i < samples.length; i++) {
-		const v = Math.max(-1, Math.min(1, samples[i] ?? 0));
-		const clipped =
-			v >= 0
-				? Math.min(Math.round(v * MAX_WAV_VALUE), MAX_WAV_VALUE)
-				: Math.max(Math.round(v * MAX_WAV_VALUE), -MAX_WAV_VALUE);
-		buffer.writeInt16LE(clipped, i * 2);
+		const v = samples[i] ?? 0;
+		const clamped = v > 1 ? 1 : v < -1 ? -1 : v;
+		const scaled = Math.round(clamped * MAX_WAV_VALUE);
+		out[i] =
+			scaled > MAX_WAV_VALUE
+				? MAX_WAV_VALUE
+				: scaled < -MAX_WAV_VALUE
+					? -MAX_WAV_VALUE
+					: scaled;
 	}
-	return buffer;
+	return out;
+}
+
+/**
+ * Fused post-processing: normalize (÷ peak) -> volume -> clip -> int16.
+ * Matches normalizeAudio + applyVolumeAndClip + floatToInt16Bytes within
+ * 1 LSB (the fused path skips one intermediate float32 rounding; inaudible),
+ * in two passes with one allocation instead of four passes with three.
+ */
+export function processAudioToInt16(
+	audio: Float32Array,
+	options: { normalize: boolean; volume?: number },
+): Int16Array {
+	let norm: Float32Array;
+	if (options.normalize) {
+		let peak = 0;
+		for (let i = 0; i < audio.length; i++) {
+			const abs = Math.abs(audio[i] ?? 0);
+			if (abs > peak) {
+				peak = abs;
+			}
+		}
+		if (peak < 1e-8) {
+			return new Int16Array(audio.length);
+		}
+		norm = new Float32Array(audio.length);
+		for (let i = 0; i < audio.length; i++) {
+			norm[i] = (audio[i] ?? 0) / peak;
+		}
+	} else {
+		norm = audio;
+	}
+	const volume = options.volume ?? 1;
+	const out = new Int16Array(norm.length);
+	for (let i = 0; i < norm.length; i++) {
+		const v = (norm[i] ?? 0) * volume;
+		const clamped = v > 1 ? 1 : v < -1 ? -1 : v;
+		const scaled = Math.round(clamped * MAX_WAV_VALUE);
+		out[i] =
+			scaled > MAX_WAV_VALUE
+				? MAX_WAV_VALUE
+				: scaled < -MAX_WAV_VALUE
+					? -MAX_WAV_VALUE
+					: scaled;
+	}
+	return out;
 }
 
 /** Silence bytes for `seconds` at `sampleRate` (16-bit mono). Mirrors `__main__.py`. */

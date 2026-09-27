@@ -338,19 +338,11 @@ export class ThaiPhonemizer {
 		const normalized = this.normalize(sentence);
 		const phonemes: string[] = [];
 		let position = 0;
-		THAI_RUN.lastIndex = 0;
-		let match: RegExpExecArray | null;
-		const runRe = new RegExp(THAI_RUN.source, THAI_RUN.flags);
-		for (
-			match = runRe.exec(normalized);
-			match !== null;
-			match = runRe.exec(normalized)
-		) {
-			phonemes.push(
-				...punctuationPhonemes(normalized.slice(position, match.index)),
-			);
+		for (const match of normalized.matchAll(THAI_RUN)) {
+			const index = match.index ?? 0;
+			phonemes.push(...punctuationPhonemes(normalized.slice(position, index)));
 			phonemes.push(...(await this.phonemizeRun(match[0])));
-			position = match.index + match[0].length;
+			position = index + match[0].length;
 		}
 		phonemes.push(...punctuationPhonemes(normalized.slice(position)));
 		while (phonemes.length > 0 && phonemes[0] === THAI_WORD_BREAK) {

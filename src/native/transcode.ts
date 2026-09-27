@@ -131,12 +131,21 @@ function wavToInt16Mono(wav: Buffer): {
 		);
 	}
 	const data = wav.subarray(44);
-	const frames = data.length / (2 * channels);
+	const frames = Math.floor(data.length / (2 * channels));
+	if (channels === 1 && data.byteOffset % 2 === 0) {
+		// Zero-copy view for aligned mono data.
+		return {
+			samples: new Int16Array(data.buffer, data.byteOffset, frames),
+			sampleRate,
+		};
+	}
 	const samples = new Int16Array(frames);
-	for (let i = 0; i < frames; i++) {
-		if (channels === 1) {
+	if (channels === 1) {
+		for (let i = 0; i < frames; i++) {
 			samples[i] = data.readInt16LE(i * 2);
-		} else {
+		}
+	} else {
+		for (let i = 0; i < frames; i++) {
 			let sum = 0;
 			for (let ch = 0; ch < channels; ch++) {
 				sum += data.readInt16LE((i * channels + ch) * 2);
