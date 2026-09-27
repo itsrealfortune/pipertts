@@ -281,6 +281,37 @@ npm test
 
 ## Changelog
 
+### 1.1.4 — Build and CI fixes
+
+- espeak bridge compiles on strict glibc (`_GNU_SOURCE` for `RTLD_DEFAULT`).
+- `lint`/`check`/`typecheck` battery green: root `biome.json`
+  (`useNamingConvention` off — public API and upstream `snake_case` must
+  stay), all other violations fixed, no logic changes.
+- CI cache key `bun.lockb` → `bun.lock`, real `tsc --noEmit` step,
+  `bun.lock` synced (missing `opusscript`/`lindera`/`pyodide` broke CI tests).
+- Prebuild matrix: linux x64/arm64 + mac arm64 green; Windows dropped
+  (choco ships no dev headers — CLI fallback covers it).
+
+### 1.1.3 — Package contents
+
+- Compiled `*.test.js` no longer ships in the npm tarball
+  (`tsconfig.build.json`; typecheck still covers tests).
+- linux-x64 bridge prebuild ships inside the tarball (built in CI).
+
+### 1.1.2 — Portable bridge build
+
+- espeak bridge resolves `espeak_TextToPhonemesWithTerminator` at runtime
+  (`dlsym`/`GetProcAddress`): old headers compile, pre-1.52 libraries
+  degrade to single-clause output.
+- `prebuild` script renamed to `build:prebuilds` (npm treated it as a
+  pre-hook of `build`, running prebuildify on every build).
+
+### 1.1.1 — Optional bridge install
+
+- npm auto-runs `node-gyp rebuild` for packages with a root `binding.gyp`;
+  the new tolerant `scripts/install-bridge.js` prefers prebuilds, tries a
+  source build, and warns instead of failing (CLI fallback).
+
 ### 1.1.0 — Native inference (no Python required)
 
 Measured on `en_US-lessac-medium`: ~2.2s/line (CLI wrapper) vs ~0.22s/line
