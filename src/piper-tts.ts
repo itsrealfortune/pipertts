@@ -1,7 +1,9 @@
 import { type SpawnOptions, spawn } from "node:child_process";
 import * as fs from "node:fs";
+import * as fsp from "node:fs/promises";
 import * as os from "node:os";
 import * as path from "node:path";
+import { randomUUID } from "node:crypto";
 import { resolveModelPathFromOptions } from "./catalog.js";
 import { resolveExecutable, resolveSystemCommand } from "./runtime.js";
 import type {
@@ -10,22 +12,103 @@ import type {
 	SynthesisResult,
 } from "./types.js";
 
+const DEFAULT_SYNTHESIS_TIMEOUT_MS = 60_000;
+
+function validateInferenceOptions(options: PiperInferenceOptions): void {
+	if (
+		options.noiseScale !== undefined &&
+		!(options.noiseScale >= 0 && options.noiseScale <= 2)
+	) {
+		throw new Error(
+			`PiperTTS: noiseScale must be in range 0.0 - 2.0 (got ${options.noiseScale}).`,
+		);
+	}
+	if (
+		options.noiseWScale !== undefined &&
+		!(options.noiseWScale >= 0 && options.noiseWScale <= 2)
+	) {
+		throw new Error(
+			`PiperTTS: noiseWScale must be in range 0.0 - 2.0 (got ${options.noiseWScale}).`,
+		);
+	}
+	if (
+		options.lengthScale !== undefined &&
+		!(options.lengthScale >= 0.1 && options.lengthScale <= 10)
+	) {
+		throw new Error(
+			`PiperTTS: lengthScale must be in range 0.1 - 10.0 (got ${options.lengthScale}).`,
+		);
+	}
+	if (
+		options.sentenceSilence !== undefined &&
+		!(options.sentenceSilence >= 0 && options.sentenceSilence <= 10)
+	) {
+		throw new Error(
+			`PiperTTS: sentenceSilence must be in range 0.0 - 10.0 (got ${options.sentenceSilence}).`,
+		);
+	}
+	if (
+		options.speakerId !== undefined &&
+		(!Number.isInteger(options.speakerId) || options.speakerId < 0)
+	) {
+		throw new Error(
+			`PiperTTS: speakerId must be an integer >= 0 (got ${options.speakerId}).`,
+		);
+	}
+	if (
+		options.numThreads !== undefined &&
+		(!Number.isInteger(options.numThreads) || options.numThreads < 1)
+	) {
+		throw new Error(
+			`PiperTTS: numThreads must be an integer >= 1 (got ${options.numThreads}).`,
+		);
+	}
+	if (
+		options.timeoutMs !== undefined &&
+		(!Number.isInteger(options.timeoutMs) || options.timeoutMs <= 0)
+	) {
+		throw new Error(
+			`PiperTTS: timeoutMs must be a positive integer (got ${options.timeoutMs}).`,
+		);
+	}
+}
+
+function resolveConfigPath(
+	modelPath: string,
+	explicitConfigPath?: string,
+): string | undefined {
+	if (explicitConfigPath) {
+		return explicitConfigPath;
+	}
+	const sibling = `${modelPath}.json`;
+	try {
+		const stat = fs.statSync(sibling);
+		if (stat.isFile()) {
+			return sibling;
+		}
+	} catch {
+		// No sibling config, let Piper use its default lookup.
+	}
+	return undefined;
+}
+
 function buildArgs(
 	modelPath: string,
+	configPath: string | undefined,
 	options: PiperInferenceOptions,
-	outputFile: string,
+	output: { kind: "file"; file: string } | { kind: "raw" },
 ): string[] {
 	const args: string[] = [];
 	args.push("--model", modelPath);
 
-	if (options.configPath) {
-		args.push("--config", options.configPath);
+	if (configPath) {
+		args.push("--config", configPath);
 	}
 
-	if (outputFile === "-") {
+	if (output.kind === "raw") {
 		args.push("--output-raw");
 	} else {
-		args.push("--output-file", outputFile);
+		args.push("--output-file", output.file);
 	}
 
 	if (options.speakerId !== undefined) {
@@ -52,7 +135,8 @@ function buildArgs(
 	if (options.useCuda) {
 		args.push("--cuda");
 	}
-	if (options.logLevel) {
+	// The Piper CLI only exposes a boolean --debug flag.
+	if (options.logLevel === "debug") {
 		args.push("--debug");
 	}
 
@@ -67,21 +151,26 @@ export class PiperTTS {
 	private readonly commandPrefixArgs: string[];
 	private readonly modelPath: string;
 	private readonly defaultOptions: PiperInferenceOptions;
+	private readonly defaultTimeoutMs: number;
 
 	private constructor(
 		binaryPath: string,
 		commandPrefixArgs: string[],
 		modelPath: string,
 		defaultOptions: PiperInferenceOptions,
+		defaultTimeoutMs: number,
 	) {
 		this.binaryPath = binaryPath;
 		this.commandPrefixArgs = commandPrefixArgs;
 		this.modelPath = modelPath;
 		this.defaultOptions = defaultOptions;
+		this.defaultTimeoutMs = defaultTimeoutMs;
 	}
 
 	/**
 	 * Creates a new instance and performs a warm-up inference to validate setup.
+	 *
+	 * Pass `skipWarmup: true` to skip the validation inference.
 	 *
 	 * @param {PiperTTSOptions} options - Instance creation options.
 	 * @returns {Promise<PiperTTS>} A fully initialized `PiperTTS` instance.
@@ -91,8 +180,16 @@ export class PiperTTS {
 		const {
 			piperBinaryPath,
 			warmUpText = "Hello, this is a warm-up test.",
+			skipWarmup = false,
+			synthesisTimeoutMs = DEFAULT_SYNTHESIS_TIMEOUT_MS,
 			defaultOptions = {},
 		} = options;
+
+		if (!Number.isInteger(synthesisTimeoutMs) || synthesisTimeoutMs <= 0) {
+			throw new Error(
+				`PiperTTS: synthesisTimeoutMs must be a positive integer (got ${synthesisTimeoutMs}).`,
+			);
+		}
 
 		const resolvedModel = await resolveModelPathFromOptions(options);
 		if (!fs.existsSync(resolvedModel)) {
@@ -115,8 +212,18 @@ export class PiperTTS {
 			throw new Error(`PiperTTS: executable not found at "${resolvedBinary}".`);
 		}
 
+		// Best-effort chmod, only for explicit file paths (not bare commands
+		// resolved via PATH such as `python3`, where chmod would hit EPERM).
 		if (os.platform() !== "win32" && piperBinaryPath) {
-			fs.chmodSync(resolvedBinary, 0o755);
+			const looksLikeFilePath =
+				piperBinaryPath.includes(path.sep) || path.isAbsolute(piperBinaryPath);
+			if (looksLikeFilePath) {
+				try {
+					fs.chmodSync(resolvedBinary, 0o755);
+				} catch {
+					// Best-effort: spawn will surface a clear error if not executable.
+				}
+			}
 		}
 
 		const instance = new PiperTTS(
@@ -124,19 +231,33 @@ export class PiperTTS {
 			commandPrefixArgs,
 			resolvedModel,
 			defaultOptions,
+			synthesisTimeoutMs,
 		);
 
-		await instance.synthesize(warmUpText, { outputFormat: "wav" });
+		if (!skipWarmup) {
+			if (!warmUpText || warmUpText.trim().length === 0) {
+				throw new Error(
+					"PiperTTS: warmUpText must not be empty unless skipWarmup is true.",
+				);
+			}
+			await instance.synthesize(warmUpText, { outputFormat: "wav" });
+		}
 		return instance;
 	}
 
 	/**
 	 * Synthesizes speech for the given text and returns audio as `Buffer`.
 	 *
+	 * - `outputFormat: "wav"` (default): WAV bytes via a temp file
+	 *   (or directly to `outputFile` when set).
+	 * - `outputFormat: "raw"`: raw PCM bytes captured from stdout.
+	 * - `outputFormat: "mp3" | "ogg"`: throws, convert the WAV output
+	 *   externally (e.g. with ffmpeg).
+	 *
 	 * @param {string} text - Input text to synthesize.
 	 * @param {PiperInferenceOptions} callOptions - Optional inference options for this call.
 	 * @returns {Promise<SynthesisResult>} Synthesis result with audio buffer and metadata.
-	 * @throws {Error} When text is empty or Piper exits with a non-zero code.
+	 * @throws {Error} When text is empty, options are invalid, or Piper fails.
 	 */
 	async synthesize(
 		text: string,
@@ -152,43 +273,77 @@ export class PiperTTS {
 				Object.entries(callOptions).filter(([, v]) => v !== undefined),
 			),
 		};
+		validateInferenceOptions(effectiveOptions);
+
+		const outputFormat = effectiveOptions.outputFormat ?? "wav";
+		if (outputFormat === "mp3" || outputFormat === "ogg") {
+			throw new Error(
+				`PiperTTS: outputFormat "${outputFormat}" is not produced natively by Piper. Synthesize to "wav" and convert externally (e.g. ffmpeg).`,
+			);
+		}
 
 		const modelPath = effectiveOptions.modelPath ?? this.modelPath;
-		const useOutputFile = effectiveOptions.outputFile;
+		const configPath = resolveConfigPath(
+			modelPath,
+			effectiveOptions.configPath,
+		);
+		const timeoutMs = effectiveOptions.timeoutMs ?? this.defaultTimeoutMs;
+		const useOutputFile = effectiveOptions.outputFile
+			? path.resolve(effectiveOptions.outputFile)
+			: null;
 
-		let tmpFile: string | null = null;
-		let targetFile: string;
+		const startMs = Date.now();
 
-		if (useOutputFile) {
-			targetFile = path.resolve(useOutputFile);
-		} else {
-			tmpFile = path.join(
-				os.tmpdir(),
-				`piper_${Date.now()}_${Math.random().toString(36).slice(2)}.wav`,
-			);
-			targetFile = tmpFile;
+		if (outputFormat === "raw") {
+			const args = buildArgs(modelPath, configPath, effectiveOptions, {
+				kind: "raw",
+			});
+			const { stdout } = await this.runPiper(text, args, timeoutMs);
+			if (useOutputFile) {
+				await fsp.mkdir(path.dirname(useOutputFile), { recursive: true });
+				await fsp.writeFile(useOutputFile, stdout);
+			}
+			return {
+				audio: stdout,
+				durationMs: Date.now() - startMs,
+				text,
+				options: { ...effectiveOptions, outputFormat },
+			};
 		}
 
-		const args = buildArgs(modelPath, effectiveOptions, targetFile);
-		const startMs = Date.now();
-		await this.runPiper(text, args);
-		const durationMs = Date.now() - startMs;
+		// WAV path: let Piper write a file, then read it back.
+		let tmpDir: string | null = null;
+		let targetFile: string;
+		if (useOutputFile) {
+			targetFile = useOutputFile;
+			await fsp.mkdir(path.dirname(targetFile), { recursive: true });
+		} else {
+			tmpDir = await fsp.mkdtemp(path.join(os.tmpdir(), "piper-"));
+			targetFile = path.join(tmpDir, `piper_${randomUUID()}.wav`);
+		}
 
-		const audio = fs.readFileSync(targetFile);
-		if (tmpFile) {
-			try {
-				fs.unlinkSync(tmpFile);
-			} catch {
-				// Best-effort cleanup
+		try {
+			const args = buildArgs(modelPath, configPath, effectiveOptions, {
+				kind: "file",
+				file: targetFile,
+			});
+			await this.runPiper(text, args, timeoutMs);
+			const audio = await fsp.readFile(targetFile);
+			return {
+				audio,
+				durationMs: Date.now() - startMs,
+				text,
+				options: { ...effectiveOptions, outputFormat },
+			};
+		} finally {
+			if (tmpDir) {
+				try {
+					await fsp.rm(tmpDir, { recursive: true, force: true });
+				} catch {
+					// Best-effort cleanup
+				}
 			}
 		}
-
-		return {
-			audio,
-			durationMs,
-			text,
-			options: effectiveOptions,
-		};
 	}
 
 	/**
@@ -234,7 +389,11 @@ export class PiperTTS {
 		return { ...this.defaultOptions };
 	}
 
-	private runPiper(text: string, args: string[]): Promise<void> {
+	private runPiper(
+		text: string,
+		args: string[],
+		timeoutMs: number,
+	): Promise<{ stdout: Buffer; stderr: string }> {
 		return new Promise((resolve, reject) => {
 			const spawnOptions: SpawnOptions = {
 				stdio: ["pipe", "pipe", "pipe"],
@@ -246,13 +405,55 @@ export class PiperTTS {
 				spawnOptions,
 			);
 
+			const stdoutChunks: Buffer[] = [];
 			const stderrChunks: Buffer[] = [];
+			let settled = false;
+
+			const timer = setTimeout(() => {
+				if (settled) {
+					return;
+				}
+				settled = true;
+				try {
+					child.kill("SIGKILL");
+				} catch {
+					// Best effort
+				}
+				const stderr = Buffer.concat(stderrChunks).toString("utf8").trim();
+				reject(
+					new Error(
+						`PiperTTS: synthesis timed out after ${timeoutMs}ms.\nStderr: ${stderr}`,
+					),
+				);
+			}, timeoutMs);
+			timer.unref?.();
+
+			const settleResolve = (value: { stdout: Buffer; stderr: string }) => {
+				if (settled) {
+					return;
+				}
+				settled = true;
+				clearTimeout(timer);
+				resolve(value);
+			};
+			const settleReject = (error: Error) => {
+				if (settled) {
+					return;
+				}
+				settled = true;
+				clearTimeout(timer);
+				reject(error);
+			};
+
+			child.stdout?.on("data", (chunk: Buffer) => {
+				stdoutChunks.push(chunk);
+			});
 			child.stderr?.on("data", (chunk: Buffer) => {
 				stderrChunks.push(chunk);
 			});
 
 			child.on("error", (err) => {
-				reject(
+				settleReject(
 					new Error(
 						`PiperTTS: failed to spawn binary "${this.binaryPath}": ${err.message}`,
 					),
@@ -262,21 +463,33 @@ export class PiperTTS {
 			child.on("close", (code) => {
 				if (code !== 0) {
 					const stderr = Buffer.concat(stderrChunks).toString("utf8").trim();
-					reject(
+					settleReject(
 						new Error(
 							`PiperTTS: process exited with code ${code}.\nStderr: ${stderr}`,
 						),
 					);
 				} else {
-					resolve();
+					settleResolve({
+						stdout: Buffer.concat(stdoutChunks),
+						stderr: Buffer.concat(stderrChunks).toString("utf8").trim(),
+					});
 				}
 			});
 
 			if (child.stdin) {
+				child.stdin.on("error", (err) => {
+					settleReject(
+						new Error(
+							`PiperTTS: failed to write to Piper stdin: ${err.message}`,
+						),
+					);
+				});
 				child.stdin.write(text, "utf8");
 				child.stdin.end();
 			} else {
-				reject(new Error("PiperTTS: stdin is not available on child process."));
+				settleReject(
+					new Error("PiperTTS: stdin is not available on child process."),
+				);
 			}
 		});
 	}

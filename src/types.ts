@@ -1,5 +1,9 @@
 /**
  * Supported output audio formats for PiperTTS.
+ *
+ * `wav` and `raw` are produced natively by the Piper CLI.
+ * `mp3` / `ogg` require external transcoding (e.g. ffmpeg) and are
+ * rejected explicitly by `synthesize()` instead of silently returning WAV.
  */
 export type PiperOutputFormat = "raw" | "wav" | "mp3" | "ogg";
 
@@ -39,26 +43,38 @@ export interface PiperInferenceOptions {
 	configPath?: string;
 	/** Output file path written by Piper. */
 	outputFile?: string;
-	/** Output audio format. */
+	/**
+	 * Output audio format.
+	 * - `wav`: standard WAV file (default).
+	 * - `raw`: raw PCM captured from stdout (no file written by Piper).
+	 * - `mp3` / `ogg`: not produced natively, `synthesize()` throws.
+	 */
 	outputFormat?: PiperOutputFormat;
-	/** Speaker ID for multi-speaker models. */
+	/** Speaker ID for multi-speaker models. Must be an integer >= 0. */
 	speakerId?: number;
-	/** Controls audio variability / expressiveness. */
+	/** Controls audio variability / expressiveness. Range: 0.0 - 2.0. */
 	noiseScale?: NoiseScale;
-	/** Controls duration/timing variability. */
+	/** Controls duration/timing variability. Range: 0.0 - 2.0. */
 	noiseWScale?: NoiseWScale;
-	/** Speech rate multiplier (higher = slower). */
+	/** Speech rate multiplier (higher = slower). Range: 0.1 - 10.0. */
 	lengthScale?: LengthScale;
-	/** Silence appended after each sentence, in seconds. */
+	/** Silence appended after each sentence, in seconds. Range: 0.0 - 10.0. */
 	sentenceSilence?: SentenceSilence;
 	/** Enable Piper JSON phoneme input mode. */
 	jsonInput?: boolean;
-	/** Number of ONNX inference threads. */
+	/** Number of ONNX inference threads. Must be an integer >= 1. */
 	numThreads?: number;
 	/** Use CUDA GPU acceleration if available. */
 	useCuda?: boolean;
-	/** Piper log level. */
+	/**
+	 * Piper log verbosity.
+	 * The Piper CLI only exposes a `--debug` flag, so only `"debug"`
+	 * changes the spawned arguments. Other levels are accepted for
+	 * forward-compatibility and recorded in the result options.
+	 */
 	logLevel?: "debug" | "info" | "warn" | "error";
+	/** Per-call synthesis timeout in milliseconds (positive integer). */
+	timeoutMs?: number;
 }
 
 /**
@@ -79,6 +95,10 @@ export interface PiperTTSOptions {
 	piperBinaryPath?: string;
 	/** Warm-up text used during startup validation. */
 	warmUpText?: string;
+	/** Skip the warm-up inference during `create()`. Default: `false`. */
+	skipWarmup?: boolean;
+	/** Default synthesis timeout in ms applied when a call omits `timeoutMs`. */
+	synthesisTimeoutMs?: number;
 	/** Default options merged into every synthesis call. */
 	defaultOptions?: Omit<PiperInferenceOptions, "modelPath">;
 }
