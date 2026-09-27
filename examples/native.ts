@@ -8,6 +8,8 @@ async function main(): Promise<void> {
 		modelPath: path.resolve("models/en_US-lessac-medium.onnx"),
 	});
 
+	const startTime = Date.now();
+
 	console.log(`phoneme type: ${tts.getConfig().phonemeType}`);
 	console.log(`sample rate: ${tts.getConfig().sampleRate}Hz`);
 
@@ -25,9 +27,12 @@ async function main(): Promise<void> {
 
 	const phonemes = await tts.phonemize("Hello world.");
 	console.log(`phonemes: ${JSON.stringify(phonemes.map((s) => s.join("")))}`);
+	console.log(`Execution time: ${Date.now() - startTime} ms`);
 }
 
-main().catch((error) => {
+main().then(() => {
+	console.log("Native TTS example completed successfully.");
+}).catch((error) => {
 	console.error(error);
 	process.exit(1);
 });
