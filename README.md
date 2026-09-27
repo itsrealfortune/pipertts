@@ -276,4 +276,48 @@ Notes:
 npm install
 npm run build
 npm run typecheck
+npm test
 ```
+
+## Changelog
+
+### 1.1.0 — Native inference (no Python required)
+
+Measured on `en_US-lessac-medium`: ~2.2s/line (CLI wrapper) vs ~0.22s/line
+(native) — roughly 10x, from killing the per-call Python spawn + model reload.
+
+Added:
+
+- `PiperNativeTTS` — persistent in-process ONNX session (`onnxruntime-node`),
+  one inference per sentence, streaming chunks.
+- All 7 `phoneme_type` values ported and verified byte-identical (or
+  equivalent) against the Python reference:
+  - `espeak`/`text` — N-API bridge (byte-identical clauses) with CLI fallback.
+  - `hebrew` — Nakdimon ONNX + 494 lines of IPA rules, identical outputs.
+  - `lithuanian` — espeak + 189k-entry stress dictionary, identical outputs.
+  - `pinyin` — full g2pW BERT port (WordPiece, features, 159MB graph);
+    polyphonic disambiguation works (`银行→yínháng`).
+  - `thai` — real TLTK unmodified under Pyodide/WASM, 7/7 identical.
+  - `japanese` — lindera-wasm + UniDic segmentation with a TS morae engine,
+    4/4 segment-identical to pyopenjtalk (no lexical pitch accent — UniDic
+    ships no accent data; documented limitation).
+  - Arabic `ar` voices get tashkeel diacritization automatically.
+- Output formats `wav`/`raw`/`mp3`/`ogg`/`opus` in both engines: ffmpeg when
+  present, otherwise pure-JS fallbacks (lamejs for mp3, opusscript + Ogg
+  muxer for opus — 0.993 correlation vs source).
+- Phonemizer data downloads on demand into `./piper-data/` (g2pw ~280MB,
+  UniDic ~200MB, TLTK ~20MB, others small).
+- espeak bridge prebuilds (`prebuildify`, CI matrix linux/win/macos).
+- `bun test` suite: 71 tests (RBNF tables, transformer vectors, Ogg CRC,
+  gated real-model e2e). `npm test` was broken (`biome test` does not exist).
+- Wrapper hardening: honest `outputFormat`, numeric range validation,
+  synthesis timeouts, streaming catalog downloads with size/md5 checks,
+  executable checks with PATHEXT support, skippable warm-up.
+
+Not ported (documented): `marine` accent model, Pyodide-independent Thai,
+lexical Japanese pitch accent.
+
+### 1.0.3 and earlier
+
+Thin TypeScript wrapper around `python3 -m piper`: process spawn per call,
+WAV-or-tempfile output, Hugging Face catalog helpers.
