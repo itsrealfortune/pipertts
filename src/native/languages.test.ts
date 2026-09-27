@@ -8,23 +8,23 @@ import {
 	wordizeAndMap,
 	zhNumberToWords,
 	zhNumbersToWords,
-} from "./chinese.ts";
-import { BertWordPieceTokenizer } from "./chinese.ts";
-import { thNumberToWords, thNumbersToWords } from "./thai.ts";
+} from "./chinese.js";
+import { BertWordPieceTokenizer } from "./chinese.js";
+import { thNumberToWords, thNumbersToWords } from "./thai.js";
 import {
 	jaExpandNumbers,
 	jaNumberToKatakana,
 	katakanaToMorae,
 	moraeToPhonemes,
 	splitJaSentences,
-} from "./japanese.ts";
-import { hebrewToIpa, hebrewWordToIpa } from "./hebrew.ts";
+} from "./japanese.js";
+import { hebrewToIpa, hebrewWordToIpa } from "./hebrew.js";
 import {
 	loadLtDictionary,
 	ltIpaVowelGroups,
 	ltPlaceAccent,
 	ltVocativeAccent,
-} from "./lithuanian.ts";
+} from "./lithuanian.js";
 
 describe("chinese tables", () => {
 	it("splits initial/final/tone", () => {

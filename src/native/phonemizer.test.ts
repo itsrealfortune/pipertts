@@ -8,7 +8,7 @@ import {
 	splitRawBlocks,
 	splitSentences,
 	textToPhonemes,
-} from "./phonemizer.ts";
+} from "./phonemizer.js";
 
 describe("raw blocks and text", () => {
 	it("splits and detects [[blocks]]", () => {

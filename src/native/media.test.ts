@@ -1,8 +1,8 @@
 import { describe, expect, it } from "bun:test";
 import * as fs from "node:fs";
-import { isFfmpegAvailable, transcodeAudio } from "./transcode.ts";
-import { encodeOpusOgg, resampleMonoInt16 } from "./opus.ts";
-import { writeWavHeader } from "./wav.ts";
+import { isFfmpegAvailable, transcodeAudio } from "./transcode.js";
+import { encodeOpusOgg, resampleMonoInt16 } from "./opus.js";
+import { writeWavHeader } from "./wav.js";
 
 function sineWav(seconds = 0.2, sampleRate = 22050): Buffer {
 	const n = Math.floor(seconds * sampleRate);
@@ -58,19 +58,19 @@ describe("transcodeAudio via ffmpeg", () => {
 
 describe("wrapper offline validation", () => {
 	it("rejects bad synthesisTimeoutMs before touching the model", async () => {
-		const { PiperTTS } = await import("../piper-tts.ts");
+		const { PiperTTS } = await import("../piper-tts.js");
 		await expect(
 			PiperTTS.create({ modelPath: "/tmp/x.onnx", synthesisTimeoutMs: -5 }),
 		).rejects.toThrow(/synthesisTimeoutMs/);
 	});
 
 	it("rejects empty language codes before fetching", async () => {
-		const { getPiperModelsByLanguage } = await import("../catalog.ts");
+		const { getPiperModelsByLanguage } = await import("../catalog.js");
 		await expect(getPiperModelsByLanguage("   ")).rejects.toThrow(/languageCode/);
 	});
 
 	it("rejects unknown executables", async () => {
-		const { resolveExecutable } = await import("../runtime.ts");
+		const { resolveExecutable } = await import("../runtime.js");
 		expect(() => resolveExecutable("definitely-not-a-binary-xyz123")).toThrow(
 			/PATH/,
 		);
@@ -80,7 +80,7 @@ describe("wrapper offline validation", () => {
 		// Validation happens before spawn; use a fake instance via skipWarmup
 		// with a stub binary is overkill — numeric validation is covered by
 		// direct synthesize attempts on missing models failing first on text.
-		const { PiperTTS } = await import("../piper-tts.ts");
+		const { PiperTTS } = await import("../piper-tts.js");
 		await expect(PiperTTS.create({ modelPath: "/nonexistent/m.onnx" })).rejects.toThrow(
 			/model file not found/,
 		);
@@ -92,7 +92,7 @@ const itModel = testModel ? it : it.skip;
 
 describe("gated model tests (PIPER_TEST_MODEL)", () => {
 	itModel("native synthesizes a valid wav", async () => {
-		const { PiperNativeTTS } = await import("./voice.ts");
+		const { PiperNativeTTS } = await import("./voice.js");
 		const tts = await PiperNativeTTS.load({ modelPath: testModel as string });
 		const { audio } = await tts.synthesize("Hello test.");
 		expect(audio.subarray(0, 4).toString()).toBe("RIFF");
@@ -100,7 +100,7 @@ describe("gated model tests (PIPER_TEST_MODEL)", () => {
 	}, 120000);
 
 	itModel("wrapper synthesizes a valid wav", async () => {
-		const { PiperTTS } = await import("../piper-tts.ts");
+		const { PiperTTS } = await import("../piper-tts.js");
 		const tts = await PiperTTS.create({
 			model: "custom",
 			modelPath: testModel as string,
@@ -111,7 +111,7 @@ describe("gated model tests (PIPER_TEST_MODEL)", () => {
 	}, 120000);
 
 	itModel("espeak CLI phonemizer produces phonemes", async () => {
-		const { espeakCliPhonemize } = await import("./phonemizer.ts");
+		const { espeakCliPhonemize } = await import("./phonemizer.js");
 		const sentences = await espeakCliPhonemize("Hello world.", "en-us", null);
 		expect(sentences.length).toBeGreaterThan(0);
 		expect(sentences[0]?.length).toBeGreaterThan(3);

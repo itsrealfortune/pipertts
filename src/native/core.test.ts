@@ -5,12 +5,12 @@ import {
 	EOS,
 	PAD,
 	phonemesToIds,
-} from "./phoneme-ids.ts";
+} from "./phoneme-ids.js";
 import {
 	piperConfigFromDict,
 	resolveSpeakerId,
 	resolveSynthesisParams,
-} from "./config.ts";
+} from "./config.js";
 import {
 	applyVolumeAndClip,
 	chunksToRaw,
@@ -19,7 +19,7 @@ import {
 	normalizeAudio,
 	silenceBytes,
 	writeWavHeader,
-} from "./wav.ts";
+} from "./wav.js";
 
 describe("phonemesToIds (espeak scheme)", () => {
 	it("wraps BOS+PAD ... EOS with PAD after each phoneme", () => {
