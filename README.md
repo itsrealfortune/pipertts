@@ -281,6 +281,12 @@ npm test
 
 ## Changelog
 
+### 1.1.5 — Install fix
+
+- `npm i` failed: the `install` script was absent from the tarball.
+  `files` now ships `scripts/install-bridge.js`, `binding.gyp`, and the
+  bridge C source (verified with a blank-dir end-user install).
+
 ### 1.1.4 — Build and CI fixes
 
 - espeak bridge compiles on strict glibc (`_GNU_SOURCE` for `RTLD_DEFAULT`).
