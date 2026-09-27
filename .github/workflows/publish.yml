@@ -22,4 +22,8 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
       - run: npm install
       - run: npm run build --if-present
+      - name: Build linux-x64 bridge prebuild
+        run: |
+          sudo apt-get update && sudo apt-get install -y espeak-ng libespeak-ng-dev
+          npx prebuildify --napi --strip -n espeak_bridge --arch x64
       - run: npm publish

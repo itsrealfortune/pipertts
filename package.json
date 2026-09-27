@@ -19,7 +19,7 @@
 		"lint": "bunx --bun @biomejs/biome lint ./src",
 		"lint:write": "bunx --bun @biomejs/biome lint --write ./src",
 		"test": "bun test src",
-		"build": "tsc --project tsconfig.json",
+		"build": "tsc --project tsconfig.build.json",
 		"deploy:npm": "npm publish --access public",
 		"publish-package": "bash ./scripts/publish-package.sh",
 		"bench": "rm -rf .benchmark-shells/ && bun benchmark-virtualshell.ts",
