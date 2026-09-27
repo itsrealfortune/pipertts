@@ -2,6 +2,10 @@
 // Exposes: initialize(dataDir), setVoice(name), getPhonemes(text).
 // getPhonemes returns an array of { phonemes, terminator, endOfSentence }.
 
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE /* RTLD_DEFAULT */
+#endif
+
 #include <stdlib.h>
 #include <string.h>
 #include <node_api.h>
