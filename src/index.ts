@@ -3,6 +3,7 @@ export {
 	getPiperModelMetadata,
 	getPiperModelsByLanguage,
 	listPiperModels,
+	resolveModelPathFromOptions,
 } from "./catalog.js";
 export { PiperNativeTTS } from "./native/voice.js";
 export { PiperTTS } from "./piper-tts.js";
