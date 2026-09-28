@@ -5,7 +5,7 @@
  * (GPL-3.0-or-later). Normalization, numbers, sentences, and transcription
  * parsing are pure TS; the `th2ipa` engine itself (TLTK, BSD-3-Clause,
  * Chulalongkorn University) runs unmodified under Pyodide (WASM, offline
- * after install) — a pure-TS port of its trigram segmenter would not
+ * after install) - a pure-TS port of its trigram segmenter would not
  * reach parity.
  */
 

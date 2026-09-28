@@ -7,7 +7,7 @@
  *
  * Known gap vs OpenJTalk: no lexical pitch accent (UniDic ships no accent
  * nucleus data), so ↑/↓/# are not emitted. Segments, mora timing, particles,
- * and geminates match; output stays flat but intelligible — espeak-ng cannot
+ * and geminates match; output stays flat but intelligible - espeak-ng cannot
  * read kanji at all.
  */
 
@@ -664,7 +664,7 @@ const JA_KATAKANA_RUN = /[ァ-ヶー]+/u;
 
 /**
  * Japanese phonemizer: lindera segmentation + katakana morae engine.
- * No lexical pitch accent (UniDic ships no accent data) — see module doc.
+ * No lexical pitch accent (UniDic ships no accent data) - see module doc.
  */
 export class JapanesePhonemizer {
 	private readonly tokenize: (text: string) => Promise<JaToken[]> | JaToken[];

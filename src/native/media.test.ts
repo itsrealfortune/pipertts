@@ -91,7 +91,7 @@ describe("wrapper offline validation", () => {
 
 	it("rejects invalid inference ranges without a model", async () => {
 		// Validation happens before spawn; use a fake instance via skipWarmup
-		// with a stub binary is overkill — numeric validation is covered by
+		// with a stub binary is overkill - numeric validation is covered by
 		// direct synthesize attempts on missing models failing first on text.
 		const { PiperTTS } = await import("../piper-tts.js");
 		await expect(

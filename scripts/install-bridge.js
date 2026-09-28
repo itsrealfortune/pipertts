@@ -2,7 +2,7 @@
  * Optional espeak-ng bridge installer.
  *
  * npm auto-runs `node-gyp rebuild` for any package shipping a root
- * `binding.gyp` without an explicit `install` script — which hard-fails on
+ * `binding.gyp` without an explicit `install` script - which hard-fails on
  * machines without `libespeak-ng-dev`. The bridge is optional (the loader
  * falls back to the `espeak-ng` CLI), so this script tries in order:
  * prebuilt binary already present → build from source → warn and continue.

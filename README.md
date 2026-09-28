@@ -133,7 +133,7 @@ WordPiece, ~280MB download on first use into `./piper-data/g2pw/`),
 `thai` (real TLTK under Pyodide/WASM, ~20MB data into `./piper-data/tltk/`,
 first call takes a few seconds, later calls are fast),
 `japanese` (lindera-wasm + UniDic, ~200MB data into `./piper-data/unidic/`;
-segments exact, **no lexical pitch accent** — UniDic ships no accent data).
+segments exact, **no lexical pitch accent** - UniDic ships no accent data).
 
 All 7 `phoneme_type` values are now supported natively; no Python needed.
 
@@ -281,7 +281,7 @@ npm test
 
 ## Changelog
 
-### 1.1.6 — Examples and hot-loop audit
+### 1.1.6 - Examples and hot-loop audit
 
 - `examples/example-native.ts`: same flow as `example.ts`, fully in-process.
 - `resolveModelPathFromOptions` now public (catalog ids for native users).
@@ -289,30 +289,30 @@ npm test
   index-based wordize, bulk int16 writes, fused audio pipeline (≤1 LSB),
   `matchAll` Thai runs, zero-copy WAV parse. Inference was already 99%+.
 
-### 1.1.5 — Install fix
+### 1.1.5 - Install fix
 
 - `npm i` failed: the `install` script was absent from the tarball.
   `files` now ships `scripts/install-bridge.js`, `binding.gyp`, and the
   bridge C source (verified with a blank-dir end-user install).
 
-### 1.1.4 — Build and CI fixes
+### 1.1.4 - Build and CI fixes
 
 - espeak bridge compiles on strict glibc (`_GNU_SOURCE` for `RTLD_DEFAULT`).
 - `lint`/`check`/`typecheck` battery green: root `biome.json`
-  (`useNamingConvention` off — public API and upstream `snake_case` must
+  (`useNamingConvention` off - public API and upstream `snake_case` must
   stay), all other violations fixed, no logic changes.
 - CI cache key `bun.lockb` → `bun.lock`, real `tsc --noEmit` step,
   `bun.lock` synced (missing `opusscript`/`lindera`/`pyodide` broke CI tests).
 - Prebuild matrix: linux x64/arm64 + mac arm64 green; Windows dropped
-  (choco ships no dev headers — CLI fallback covers it).
+  (choco ships no dev headers - CLI fallback covers it).
 
-### 1.1.3 — Package contents
+### 1.1.3 - Package contents
 
 - Compiled `*.test.js` no longer ships in the npm tarball
   (`tsconfig.build.json`; typecheck still covers tests).
 - linux-x64 bridge prebuild ships inside the tarball (built in CI).
 
-### 1.1.2 — Portable bridge build
+### 1.1.2 - Portable bridge build
 
 - espeak bridge resolves `espeak_TextToPhonemesWithTerminator` at runtime
   (`dlsym`/`GetProcAddress`): old headers compile, pre-1.52 libraries
@@ -320,36 +320,36 @@ npm test
 - `prebuild` script renamed to `build:prebuilds` (npm treated it as a
   pre-hook of `build`, running prebuildify on every build).
 
-### 1.1.1 — Optional bridge install
+### 1.1.1 - Optional bridge install
 
 - npm auto-runs `node-gyp rebuild` for packages with a root `binding.gyp`;
   the new tolerant `scripts/install-bridge.js` prefers prebuilds, tries a
   source build, and warns instead of failing (CLI fallback).
 
-### 1.1.0 — Native inference (no Python required)
+### 1.1.0 - Native inference (no Python required)
 
 Measured on `en_US-lessac-medium`: ~2.2s/line (CLI wrapper) vs ~0.22s/line
-(native) — roughly 10x, from killing the per-call Python spawn + model reload.
+(native) - roughly 10x, from killing the per-call Python spawn + model reload.
 
 Added:
 
-- `PiperNativeTTS` — persistent in-process ONNX session (`onnxruntime-node`),
+- `PiperNativeTTS` - persistent in-process ONNX session (`onnxruntime-node`),
   one inference per sentence, streaming chunks.
 - All 7 `phoneme_type` values ported and verified byte-identical (or
   equivalent) against the Python reference:
-  - `espeak`/`text` — N-API bridge (byte-identical clauses) with CLI fallback.
-  - `hebrew` — Nakdimon ONNX + 494 lines of IPA rules, identical outputs.
-  - `lithuanian` — espeak + 189k-entry stress dictionary, identical outputs.
-  - `pinyin` — full g2pW BERT port (WordPiece, features, 159MB graph);
+  - `espeak`/`text` - N-API bridge (byte-identical clauses) with CLI fallback.
+  - `hebrew` - Nakdimon ONNX + 494 lines of IPA rules, identical outputs.
+  - `lithuanian` - espeak + 189k-entry stress dictionary, identical outputs.
+  - `pinyin` - full g2pW BERT port (WordPiece, features, 159MB graph);
     polyphonic disambiguation works (`银行→yínháng`).
-  - `thai` — real TLTK unmodified under Pyodide/WASM, 7/7 identical.
-  - `japanese` — lindera-wasm + UniDic segmentation with a TS morae engine,
-    4/4 segment-identical to pyopenjtalk (no lexical pitch accent — UniDic
+  - `thai` - real TLTK unmodified under Pyodide/WASM, 7/7 identical.
+  - `japanese` - lindera-wasm + UniDic segmentation with a TS morae engine,
+    4/4 segment-identical to pyopenjtalk (no lexical pitch accent - UniDic
     ships no accent data; documented limitation).
   - Arabic `ar` voices get tashkeel diacritization automatically.
 - Output formats `wav`/`raw`/`mp3`/`ogg`/`opus` in both engines: ffmpeg when
   present, otherwise pure-JS fallbacks (lamejs for mp3, opusscript + Ogg
-  muxer for opus — 0.993 correlation vs source).
+  muxer for opus - 0.993 correlation vs source).
 - Phonemizer data downloads on demand into `./piper-data/` (g2pw ~280MB,
   UniDic ~200MB, TLTK ~20MB, others small).
 - espeak bridge prebuilds (`prebuildify`, CI matrix linux/win/macos).
