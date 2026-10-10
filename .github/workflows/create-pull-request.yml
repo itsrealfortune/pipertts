@@ -6,7 +6,8 @@ on:
 
 jobs:
   create-pull-request:
-    if: github.ref != 'refs/heads/main'
+    # gh-pages only receives published docs; never open PRs from it.
+    if: github.ref != 'refs/heads/main' && github.ref != 'refs/heads/gh-pages'
     runs-on: ubuntu-latest
     steps:
       - name: Validate pull request token
