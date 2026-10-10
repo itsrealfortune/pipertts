@@ -9,7 +9,9 @@
 <div class="tsd-page-title">
 <h1>pipertts - v1.2.0</h1></div>
 <div class="tsd-panel tsd-typography"><h1 id="pipertts" class="tsd-anchor-link">pipertts<a href="#pipertts" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h1>
+<p><a href="https://itsrealfortune.fr/pipertts/"><img src="https://img.shields.io/badge/docs-typedoc-blue.svg" alt="API docs"></a></p>
 <p>In-process <a href="https://github.com/rhasspy/piper">Piper</a> text-to-speech for Node.js. No Python required.</p>
+<!-- API reference: https://itsrealfortune.fr/pipertts/ -->
 <p><code>pipertts</code> runs Piper neural voices directly inside Node via <code>onnxruntime-node</code>: the ONNX session stays warm, so synthesis runs ~10x faster than spawning the Piper CLI per call (~0.22s/line vs ~2.2s/line on <code>en_US-lessac-medium</code>).</p>
 <h2 id="what-you-get" class="tsd-anchor-link">What you get<a href="#what-you-get" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
 <ul>
@@ -397,6 +399,24 @@ See <code>examples/example.ts</code>.</p>
 </code><button type="button">Copy</button></pre>
 
 <h2 id="changelog" class="tsd-anchor-link">Changelog<a href="#changelog" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<h3 id="130-load-from-url--piperhub-catalog" class="tsd-anchor-link">1.3.0 — Load from URL + PiperHub catalog<a href="#130-load-from-url--piperhub-catalog" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul>
+<li><code>modelUrl</code> / <code>configUrl</code> on <code>PiperNativeTTS.load</code> and <code>PiperTTS.create</code>:
+direct <code>.onnx</code> downloads (any host, including Hugging Face), cached once
+under <code>modelsDir/url-&lt;hash&gt;/</code>, config defaults to <code>&lt;modelUrl&gt;.json</code>.</li>
+<li>PiperHub community catalog (~500 voices): <code>listPiperHubModels</code>,
+<code>getPiperHubModelMetadata</code>, <code>getPiperHubModelsByLanguage</code>,
+<code>ensurePiperHubModelDownloaded</code>. <code>model</code> accepts rhasspy ids,
+<code>hub:&lt;slug&gt;</code>, <a href="http://piperhub.org">piperhub.org</a> page URLs, and bare slugs.</li>
+<li>Resilience: automatic fallback to the <code>piper-voices-collection</code> mirror
+when an author repo stops serving files; voices flagged <code>usable: false</code>
+(broken files, piper-plus format) fail fast with a clear error.</li>
+<li>Shared <code>resolveModelFiles</code> used by both engines; 15 hermetic tests
+(local HTTP server, no external network).</li>
+<li>TypeDoc API reference published at
+<a href="https://itsrealfortune.fr/pipertts/">https://itsrealfortune.fr/pipertts/</a> (<code>generate-doc</code> / <code>publish-doc</code>
+scripts, CI <code>docs</code> job with <code>--treatWarningsAsErrors</code>).</li>
+</ul>
 <h3 id="120-native-first-readme" class="tsd-anchor-link">1.2.0 — Native-first README<a href="#120-native-first-readme" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul>
 <li>README rewritten around <code>PiperNativeTTS</code>: the CLI wrapper moves to a
@@ -528,6 +548,7 @@ WAV-or-tempfile output, Hugging Face catalog helpers.</p>
 <li><a href="#changelog"><span>Changelog</span></a></li>
 <li>
 <ul>
+<li><a href="#130-load-from-url--piperhub-catalog"><span>1.3.0 — <wbr/>Load from <wbr/>URL + <wbr/>Piper<wbr/>Hub catalog</span></a></li>
 <li><a href="#120-native-first-readme"><span>1.2.0 — <wbr/>Native-<wbr/>first <wbr/>README</span></a></li>
 <li><a href="#116-examples-and-hot-loop-audit"><span>1.1.6 — <wbr/>Examples and hot-<wbr/>loop audit</span></a></li>
 <li><a href="#115-install-fix"><span>1.1.5 — <wbr/>Install fix</span></a></li>
