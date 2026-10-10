@@ -46,6 +46,20 @@ const modelPath = await resolveModelPathFromOptions({
 });
 
 const tts = await PiperNativeTTS.load({ modelPath });
+
+// ...or straight from a URL (any host, including Hugging Face):
+const ttsUrl = await PiperNativeTTS.load({
+  modelUrl:
+    "https://huggingface.co/Artyom9800/glados_fr_piper_medium/resolve/main/fr_FR-glados_fr-medium.onnx",
+  modelsDir: "./models",
+});
+// config defaults to `<modelUrl>.json`; override with `configUrl` if needed.
+
+// ...or from the PiperHub community catalog (~500 voices):
+const ttsHub = await PiperNativeTTS.load({
+  model: "hub:glados-french-medium-voice",
+  modelsDir: "./models",
+});
 ```
 
 Phonemizer data (g2pw ~280MB, UniDic ~200MB, TLTK ~20MB, smaller tables for Hebrew/Arabic/Lithuanian) downloads once into `./piper-data/` on first use. Override with `nativeDataDir` or per-bundle paths (`g2pwModelDir`, `unidicDir`, `tltkDataDir`, `nakdimonModelPath`, `tashkeelModelDir`, `lithuanianDataDir`).
@@ -104,6 +118,47 @@ console.log(englishModels.length, frenchModels.length);
 
 `getPiperModelMetadata("custom")` returns `null`.
 `getPiperModelsByLanguage("en")` matches all variants like `en_US`, `en_GB`, etc.
+
+## PiperHub catalog and direct URLs
+
+[PiperHub](https://piperhub.org) indexes ~500 community voices (GLaDOS,
+game characters, finetunes) that the rhasspy manifest above does not cover.
+Each entry points at a Hugging Face repo; downloads go straight to HF:
+
+```ts
+import {
+  getPiperHubModelMetadata,
+  getPiperHubModelsByLanguage,
+  listPiperHubModels,
+  PiperNativeTTS,
+} from "pipertts";
+
+const slugs = await listPiperHubModels(); // 500+ slugs
+const meta = await getPiperHubModelMetadata("glados-french-medium-voice");
+console.log(meta.repo, meta.onnxUrl, meta.pageUrl);
+
+const french = await getPiperHubModelsByLanguage("fr");
+
+// Any of these selects the voice — bare slugs also work as `model`:
+const tts = await PiperNativeTTS.load({
+  model: "hub:glados-french-medium-voice",
+  modelsDir: "./models",
+});
+```
+
+Accepted `model` forms: rhasspy id/alias, `hub:<slug>`, full
+`piperhub.org/model/<slug>/` page URL, or bare slug. `PiperTTS.create` and
+`resolveModelPathFromOptions` accept the same values, plus `modelUrl` /
+`configUrl` for direct downloads (cached under
+`modelsDir/url-<hash>/`, `configUrl` defaults to `<modelUrl>.json`).
+
+Robustness: PiperHub downloads first try the voice's own repo, then fall
+back automatically to the community mirror
+(`fox3000foxy/piper-voices-collection`) when the author repo no longer
+serves the files. Voices the catalog flags `usable: false` (broken files,
+or `piperPlus` format needing a forked runtime) are refused with an
+explanatory error — metadata exposes `usable` / `piperPlus` so you can
+filter them via `getPiperHubModelMetadata()`.
 
 ## Phonemizers
 
@@ -193,8 +248,12 @@ Loads the ONNX model and resolves phonemizer resources (downloading data on firs
 
 | Option | Type | Required | Default |
 |---|---|---|---|
-| `modelPath` | `string` | yes | - |
+| `modelPath` | `string` | one of `modelPath` / `modelUrl` / `model` | - |
+| `modelUrl` | `string` | one of `modelPath` / `modelUrl` / `model` | - |
+| `model` | `string` | one of `modelPath` / `modelUrl` / `model` | - |
 | `configPath` | `string` | no | auto (`<model>.json`) |
+| `configUrl` | `string` | no | auto (`<modelUrl>.json`) |
+| `modelsDir` | `string` | no | `"models"` (download cache) |
 | `numThreads` | `number` | no | ONNX default |
 | `espeakBinary` | `string` | no | `espeak-ng` |
 | `session` | `NativeSession` | no | created from `modelPath` |
