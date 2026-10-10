@@ -346,6 +346,24 @@ npm test
 
 ## Changelog
 
+### 1.3.0 — Load from URL + PiperHub catalog
+
+- `modelUrl` / `configUrl` on `PiperNativeTTS.load` and `PiperTTS.create`:
+  direct `.onnx` downloads (any host, including Hugging Face), cached once
+  under `modelsDir/url-<hash>/`, config defaults to `<modelUrl>.json`.
+- PiperHub community catalog (~500 voices): `listPiperHubModels`,
+  `getPiperHubModelMetadata`, `getPiperHubModelsByLanguage`,
+  `ensurePiperHubModelDownloaded`. `model` accepts rhasspy ids,
+  `hub:<slug>`, piperhub.org page URLs, and bare slugs.
+- Resilience: automatic fallback to the `piper-voices-collection` mirror
+  when an author repo stops serving files; voices flagged `usable: false`
+  (broken files, piper-plus format) fail fast with a clear error.
+- Shared `resolveModelFiles` used by both engines; 15 hermetic tests
+  (local HTTP server, no external network).
+- TypeDoc API reference published at
+  <https://itsrealfortune.fr/pipertts/> (`generate-doc` / `publish-doc`
+  scripts, CI `docs` job with `--treatWarningsAsErrors`).
+
 ### 1.2.0 — Native-first README
 
 - README rewritten around `PiperNativeTTS`: the CLI wrapper moves to a
