@@ -135,7 +135,13 @@ export function parsePiperHubSlug(input: string): string | null {
 	return null;
 }
 
-/** Builds a direct Hugging Face download URL for a repo-relative file. */
+/**
+ * Builds a direct Hugging Face download URL for a repo-relative file.
+ *
+ * @param {PiperHubModelEntry} entry - Catalog entry holding the repo and relative paths.
+ * @param {"onnx" | "json"} kind - Which file to address.
+ * @returns {string} Direct `https://huggingface.co/.../resolve/main/...` URL (or the path unchanged when already absolute).
+ */
 export function piperHubFileUrl(
 	entry: PiperHubModelEntry,
 	kind: "onnx" | "json",

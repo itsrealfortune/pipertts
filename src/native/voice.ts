@@ -165,6 +165,18 @@ export class PiperNativeTTS {
 		this.resourceOptions = resourceOptions;
 	}
 
+	/**
+	 * Loads a voice from a local file, a direct URL, or a catalog reference.
+	 *
+	 * Resolution order: explicit `modelPath`, then `modelUrl` (downloaded once
+	 * into `modelsDir` and cached), then `model` (rhasspy id, `hub:<slug>`,
+	 * piperhub.org page URL, or bare PiperHub slug). The `.onnx.json` config
+	 * defaults to the model sibling (`<model>.json` / `<modelUrl>.json`).
+	 *
+	 * @param {NativeTtsOptions} options - Model source, session reuse, and phonemizer data locations.
+	 * @returns {Promise<PiperNativeTTS>} A voice with a warm persistent ONNX session.
+	 * @throws {Error} When no usable source is provided, files are missing, or the config/phoneme type is unsupported.
+	 */
 	static async load(options: NativeTtsOptions): Promise<PiperNativeTTS> {
 		const { resolveModelFiles } = await import("../model-source.js");
 		const { modelPath, configPath } = await resolveModelFiles({
@@ -211,14 +223,30 @@ export class PiperNativeTTS {
 		);
 	}
 
+	/**
+	 * Returns the resolved Piper voice configuration.
+	 *
+	 * @returns {PiperConfig} Sample rate, phoneme type, id map, and defaults parsed from the `.onnx.json` file.
+	 */
 	getConfig(): PiperConfig {
 		return this.config;
 	}
 
+	/**
+	 * Returns the resolved local `.onnx` model path (downloaded first when the voice came from a URL or catalog reference).
+	 *
+	 * @returns {string} Absolute model path.
+	 */
 	getModelPath(): string {
 		return this.modelPath;
 	}
 
+	/**
+	 * Converts text to phonemes with the voice's own phonemizer (`espeak`, `text`, `hebrew`, `lithuanian`, `pinyin`, `thai`, or `japanese`; Arabic `ar` voices are diacritized first unless disabled).
+	 *
+	 * @param {string} text - Input text to phonemize.
+	 * @returns {Promise<string[][]>} Phoneme arrays grouped by sentence.
+	 */
 	async phonemize(text: string): Promise<string[][]> {
 		if (this.config.phonemeType === "text") {
 			return [textToPhonemes(text)];
@@ -376,6 +404,14 @@ export class PiperNativeTTS {
 		return this.chinese;
 	}
 
+	/**
+	 * Synthesizes text sentence by sentence, yielding raw PCM per sentence as it is produced.
+	 *
+	 * @param {string} text - Input text to synthesize.
+	 * @param {NativeSynthesizeOptions} options - Per-call synthesis parameters (scales, speaker, volume).
+	 * @returns {AsyncGenerator<NativeAudioChunk>} Per-sentence `{ sampleRate, phonemes, phonemeIds, pcm16 }` chunks.
+	 * @throws {Error} When text is empty.
+	 */
 	async *synthesizeChunks(
 		text: string,
 		options: NativeSynthesizeOptions = {},
@@ -427,6 +463,14 @@ export class PiperNativeTTS {
 		}
 	}
 
+	/**
+	 * Synthesizes text and returns the full audio: sentence chunks concatenated with `sentenceSilence` gaps, then encoded to `outputFormat` (`wav` by default) and optionally written to `outputFile`.
+	 *
+	 * @param {string} text - Input text to synthesize.
+	 * @param {NativeSynthesizeOptions} options - Per-call synthesis parameters, output format, and optional output file.
+	 * @returns {Promise<{ audio: Buffer; sampleRate: number; text: string }>} Final audio with its sample rate and source text.
+	 * @throws {Error} When text is empty or no audio is produced.
+	 */
 	async synthesize(
 		text: string,
 		options: NativeSynthesizeOptions = {},
