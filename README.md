@@ -198,6 +198,22 @@ await tts.synthesize("Saved directly.", {
 });
 ```
 
+## Performance
+
+Measured on `en_US-lessac-medium`-class models (native engine, CPU):
+
+- The ONNX-optimized model is cached next to the `.onnx` file on first
+  load (`<model>.ortopt-<platform>-<arch>-v<ort>.onnx`, ~same size as the
+  original). Later loads skip most of the graph-optimization work
+  (~35% faster session creation) and inference runs on the pre-optimized
+  graph. Disable with `cacheOptimizedModel: false` or `PIPER_ORT_CACHE=0`;
+  the cache is keyed by platform/arch/ORT version and refreshes when the
+  model file is newer.
+- Inference threads default to ONNX Runtime's choice (all cores). On
+  machines where the box is shared, `numThreads` can cap this.
+- Phonemization runs through the in-process espeak bridge (~0.4ms per
+  call); the CLI fallback spawns `espeak-ng` per sentence (~15ms each).
+
 ## Espeak bridge
 
 `src/native/espeak-bridge/` is an N-API port of `espeakbridge.c`
@@ -259,6 +275,8 @@ Loads the ONNX model and resolves phonemizer resources (downloading data on firs
 | `configUrl` | `string` | no | auto (`<modelUrl>.json`) |
 | `modelsDir` | `string` | no | `"models"` (download cache) |
 | `numThreads` | `number` | no | ONNX default |
+| `executionProviders` | `string[]` | no | `["cpu"]` |
+| `cacheOptimizedModel` | `boolean` | no | `true` (`PIPER_ORT_CACHE=0` disables) |
 | `espeakBinary` | `string` | no | `espeak-ng` |
 | `session` | `NativeSession` | no | created from `modelPath` |
 | `nativeDataDir` | `string` | no | `"./piper-data"` |

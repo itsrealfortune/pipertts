@@ -65,6 +65,17 @@ export interface NativeTtsOptions {
 	modelsDir?: string;
 	configPath?: string;
 	numThreads?: number;
+	/**
+	 * ONNX Runtime execution providers, in order of preference.
+	 * Default: `["cpu"]`.
+	 */
+	executionProviders?: string[];
+	/**
+	 * Cache the ORT-optimized model next to the `.onnx` file and load from it
+	 * on later calls (default: true; ~35% faster session load). Set `false` or
+	 * set `PIPER_ORT_CACHE=0` to disable.
+	 */
+	cacheOptimizedModel?: boolean;
 	espeakBinary?: string;
 	session?: NativeSession;
 	/** Base dir for auto-downloaded phonemizer data (tashkeel/hebrew/lithuanian). */
@@ -203,6 +214,8 @@ export class PiperNativeTTS {
 			options.session ??
 			(await createNativeSession(modelPath, {
 				numThreads: options.numThreads,
+				executionProviders: options.executionProviders,
+				cacheOptimizedModel: options.cacheOptimizedModel,
 			}));
 		return new PiperNativeTTS(
 			config,

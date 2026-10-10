@@ -37,7 +37,12 @@ export {
 	hebrewToIpa,
 	NakdimonDiacritizer,
 } from "./hebrew.js";
-export type { NativeSession, OrtLike, RawOrtSession } from "./inference.js";
+export type {
+	NativeSession,
+	OrtLike,
+	OrtSessionOptions,
+	RawOrtSession,
+} from "./inference.js";
 export { createNativeSession, createRawOrtSession } from "./inference.js";
 export {
 	ensureLinderaUnidicDir,
