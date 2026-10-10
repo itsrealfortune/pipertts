@@ -13,18 +13,18 @@ export {
 	ensureModelUrlDownloaded,
 	resolveModelFiles,
 } from "./model-source.js";
-export { PiperNativeTTS } from "./native/voice.js";
-export type {
-	NativeAudioChunk,
-	NativeSynthesizeOptions,
-	NativeTtsOptions,
-} from "./native/voice.js";
-export type { NativeSession } from "./native/inference.js";
 export type {
 	PhonemeType,
 	PiperConfig,
 	SynthesisConfig,
 } from "./native/config.js";
+export type { NativeSession } from "./native/inference.js";
+export type {
+	NativeAudioChunk,
+	NativeSynthesizeOptions,
+	NativeTtsOptions,
+} from "./native/voice.js";
+export { PiperNativeTTS } from "./native/voice.js";
 export { PiperTTS } from "./piper-tts.js";
 export type {
 	PiperHubModelEntry,
