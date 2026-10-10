@@ -1,6 +1,10 @@
 # pipertts
 
+[![API docs](https://img.shields.io/badge/docs-typedoc-blue.svg)](https://itsrealfortune.fr/pipertts/)
+
 In-process [Piper](https://github.com/rhasspy/piper) text-to-speech for Node.js. No Python required.
+
+<!-- API reference: https://itsrealfortune.fr/pipertts/ -->
 
 `pipertts` runs Piper neural voices directly inside Node via `onnxruntime-node`: the ONNX session stays warm, so synthesis runs ~10x faster than spawning the Piper CLI per call (~0.22s/line vs ~2.2s/line on `en_US-lessac-medium`).
 

@@ -1,0 +1,545 @@
+<!DOCTYPE html><html class="default" lang="en" data-base="./"><head><meta charset="utf-8"/><meta http-equiv="x-ua-compatible" content="IE=edge"/><title>pipertts - v1.2.0</title><meta name="description" content="Documentation for pipertts"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="assets/style.css"/><link rel="stylesheet" href="assets/highlight.css"/><script defer src="assets/main.js"></script><script async src="assets/icons.js" id="tsd-icons-script"></script><script async src="assets/search.js" id="tsd-search-script"></script><script async src="assets/navigation.js" id="tsd-nav-script"></script><script async src="assets/hierarchy.js" id="tsd-hierarchy-script"></script></head><body><script>document.documentElement.dataset.theme = localStorage.getItem("tsd-theme") || "os";document.body.style.display="none";setTimeout(() => window.app?app.showPage():document.body.style.removeProperty("display"),500)</script><header class="tsd-page-toolbar">
+<div class="tsd-toolbar-contents container"><a href="index.html" class="title">pipertts - v1.2.0</a>
+<div id="tsd-toolbar-links"></div><button id="tsd-search-trigger" class="tsd-widget" aria-label="Search"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="assets/icons.svg#icon-search"></use></svg></button><dialog id="tsd-search" aria-label="Search"><input role="combobox" id="tsd-search-input" aria-controls="tsd-search-results" aria-autocomplete="list" aria-expanded="true" autocapitalize="off" autocomplete="off" placeholder="Search the docs" maxLength="100"/>
+<ul role="listbox" id="tsd-search-results"></ul>
+<div id="tsd-search-status" aria-live="polite" aria-atomic="true">
+<div>Preparing search index...</div></div></dialog><a href="#" class="tsd-widget menu" id="tsd-toolbar-menu-trigger" data-toggle="menu" aria-label="Menu"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="assets/icons.svg#icon-menu"></use></svg></a></div></header>
+<div class="container container-main">
+<div class="col-content">
+<div class="tsd-page-title">
+<h1>pipertts - v1.2.0</h1></div>
+<div class="tsd-panel tsd-typography"><h1 id="pipertts" class="tsd-anchor-link">pipertts<a href="#pipertts" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h1>
+<p>In-process <a href="https://github.com/rhasspy/piper">Piper</a> text-to-speech for Node.js. No Python required.</p>
+<p><code>pipertts</code> runs Piper neural voices directly inside Node via <code>onnxruntime-node</code>: the ONNX session stays warm, so synthesis runs ~10x faster than spawning the Piper CLI per call (~0.22s/line vs ~2.2s/line on <code>en_US-lessac-medium</code>).</p>
+<h2 id="what-you-get" class="tsd-anchor-link">What you get<a href="#what-you-get" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<ul>
+<li>Native inference (<code>PiperNativeTTS</code>): persistent ONNX session, streaming per-sentence chunks</li>
+<li>All 7 Piper <code>phoneme_type</code> values: <code>espeak</code>, <code>text</code>, <code>hebrew</code>, <code>lithuanian</code>, <code>pinyin</code>, <code>thai</code>, <code>japanese</code></li>
+<li>Multi-speaker voices (<code>speakerId</code>, incl. multi-style models)</li>
+<li>Output as <code>Buffer</code> or direct file write: <code>wav</code>, <code>raw</code>, <code>mp3</code>, <code>ogg</code>, <code>opus</code></li>
+<li>Catalog model selection via Hugging Face with auto-download (<code>listPiperModels()</code>)</li>
+<li>Cross-platform support for:
+<ul>
+<li>Linux x64</li>
+<li>Linux arm64</li>
+<li>Windows x64</li>
+</ul>
+</li>
+<li>Typed API with startup validation and a 71-test suite</li>
+</ul>
+<h2 id="platform-support" class="tsd-anchor-link">Platform support<a href="#platform-support" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<table>
+<thead>
+<tr>
+<th>OS</th>
+<th>Architecture</th>
+<th>Requirement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Linux</td>
+<td>x64</td>
+<td>None beyond npm install (espeak prebuild bundled)</td>
+</tr>
+<tr>
+<td>Linux</td>
+<td>arm64</td>
+<td>None beyond npm install (espeak prebuild bundled)</td>
+</tr>
+<tr>
+<td>Windows</td>
+<td>x64</td>
+<td><code>espeak-ng</code> CLI (falls back automatically, e.g. via choco)</td>
+</tr>
+</tbody>
+</table>
+<p><code>onnxruntime-node</code>, <code>lindera-wasm</code>, <code>pyodide</code>, and the pure-JS audio encoders ship as npm dependencies. <code>ffmpeg</code> is optional: when present it handles <code>mp3</code>/<code>ogg</code>/<code>opus</code> transcoding, otherwise pure-JS fallbacks cover <code>mp3</code> (lamejs) and <code>opus</code> (opusscript); <code>ogg</code> needs <code>ffmpeg</code>.</p>
+<h2 id="install" class="tsd-anchor-link">Install<a href="#install" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<pre><code class="bash"><span class="hl-0">npm</span><span class="hl-1"> </span><span class="hl-2">install</span><span class="hl-1"> </span><span class="hl-2">pipertts</span>
+</code><button type="button">Copy</button></pre>
+
+<h2 id="required-setup" class="tsd-anchor-link">Required setup<a href="#required-setup" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<p><code>pipertts</code> does not ship Piper voice models. Get a <code>.onnx</code> model (and its <code>.onnx.json</code>) from the Piper project, or let the catalog helpers download one for you:</p>
+<pre><code class="ts"><span class="hl-3">import</span><span class="hl-1"> { </span><span class="hl-4">PiperNativeTTS</span><span class="hl-1">, </span><span class="hl-4">resolveModelPathFromOptions</span><span class="hl-1"> } </span><span class="hl-3">from</span><span class="hl-1"> </span><span class="hl-2">&quot;pipertts&quot;</span><span class="hl-1">;</span><br/><br/><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-6">modelPath</span><span class="hl-1"> = </span><span class="hl-3">await</span><span class="hl-1"> </span><span class="hl-0">resolveModelPathFromOptions</span><span class="hl-1">({</span><br/><span class="hl-1">  </span><span class="hl-4">model:</span><span class="hl-1"> </span><span class="hl-2">&quot;en_US-lessac-medium&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-4">modelsDir:</span><span class="hl-1"> </span><span class="hl-2">&quot;./models&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">});</span><br/><br/><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-6">tts</span><span class="hl-1"> = </span><span class="hl-3">await</span><span class="hl-1"> </span><span class="hl-4">PiperNativeTTS</span><span class="hl-1">.</span><span class="hl-0">load</span><span class="hl-1">({ </span><span class="hl-4">modelPath</span><span class="hl-1"> });</span><br/><br/><span class="hl-7">// ...or straight from a URL (any host, including Hugging Face):</span><br/><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-6">ttsUrl</span><span class="hl-1"> = </span><span class="hl-3">await</span><span class="hl-1"> </span><span class="hl-4">PiperNativeTTS</span><span class="hl-1">.</span><span class="hl-0">load</span><span class="hl-1">({</span><br/><span class="hl-1">  </span><span class="hl-4">modelUrl:</span><br/><span class="hl-1">    </span><span class="hl-2">&quot;https://huggingface.co/Artyom9800/glados_fr_piper_medium/resolve/main/fr_FR-glados_fr-medium.onnx&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-4">modelsDir:</span><span class="hl-1"> </span><span class="hl-2">&quot;./models&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">});</span><br/><span class="hl-7">// config defaults to `&lt;modelUrl&gt;.json`; override with `configUrl` if needed.</span><br/><br/><span class="hl-7">// ...or from the PiperHub community catalog (~500 voices):</span><br/><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-6">ttsHub</span><span class="hl-1"> = </span><span class="hl-3">await</span><span class="hl-1"> </span><span class="hl-4">PiperNativeTTS</span><span class="hl-1">.</span><span class="hl-0">load</span><span class="hl-1">({</span><br/><span class="hl-1">  </span><span class="hl-4">model:</span><span class="hl-1"> </span><span class="hl-2">&quot;hub:glados-french-medium-voice&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-4">modelsDir:</span><span class="hl-1"> </span><span class="hl-2">&quot;./models&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">});</span>
+</code><button type="button">Copy</button></pre>
+
+<p>Phonemizer data (g2pw ~280MB, UniDic ~200MB, TLTK ~20MB, smaller tables for Hebrew/Arabic/Lithuanian) downloads once into <code>./piper-data/</code> on first use. Override with <code>nativeDataDir</code> or per-bundle paths (<code>g2pwModelDir</code>, <code>unidicDir</code>, <code>tltkDataDir</code>, <code>nakdimonModelPath</code>, <code>tashkeelModelDir</code>, <code>lithuanianDataDir</code>).</p>
+<p>Piper releases: <a href="https://github.com/rhasspy/piper/releases">https://github.com/rhasspy/piper/releases</a></p>
+<h2 id="quick-start" class="tsd-anchor-link">Quick start<a href="#quick-start" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<pre><code class="ts"><span class="hl-3">import</span><span class="hl-1"> { </span><span class="hl-4">PiperNativeTTS</span><span class="hl-1"> } </span><span class="hl-3">from</span><span class="hl-1"> </span><span class="hl-2">&quot;pipertts&quot;</span><span class="hl-1">;</span><br/><span class="hl-3">import</span><span class="hl-1"> </span><span class="hl-5">*</span><span class="hl-1"> </span><span class="hl-3">as</span><span class="hl-1"> </span><span class="hl-4">fs</span><span class="hl-1"> </span><span class="hl-3">from</span><span class="hl-1"> </span><span class="hl-2">&quot;node:fs&quot;</span><span class="hl-1">;</span><br/><br/><span class="hl-5">async</span><span class="hl-1"> </span><span class="hl-5">function</span><span class="hl-1"> </span><span class="hl-0">main</span><span class="hl-1">() {</span><br/><span class="hl-1">  </span><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-6">tts</span><span class="hl-1"> = </span><span class="hl-3">await</span><span class="hl-1"> </span><span class="hl-4">PiperNativeTTS</span><span class="hl-1">.</span><span class="hl-0">load</span><span class="hl-1">({</span><br/><span class="hl-1">    </span><span class="hl-4">modelPath:</span><span class="hl-1"> </span><span class="hl-2">&quot;./models/en_US-lessac-medium.onnx&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">  });</span><br/><br/><span class="hl-1">  </span><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-6">result</span><span class="hl-1"> = </span><span class="hl-3">await</span><span class="hl-1"> </span><span class="hl-4">tts</span><span class="hl-1">.</span><span class="hl-0">synthesize</span><span class="hl-1">(</span><span class="hl-2">&quot;Hello from Piper.&quot;</span><span class="hl-1">, {</span><br/><span class="hl-1">    </span><span class="hl-4">outputFormat:</span><span class="hl-1"> </span><span class="hl-2">&quot;wav&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">    </span><span class="hl-4">lengthScale:</span><span class="hl-1"> </span><span class="hl-8">0.9</span><span class="hl-1">,</span><br/><span class="hl-1">  });</span><br/><span class="hl-1">  </span><span class="hl-4">fs</span><span class="hl-1">.</span><span class="hl-0">writeFileSync</span><span class="hl-1">(</span><span class="hl-2">&quot;./hello.wav&quot;</span><span class="hl-1">, </span><span class="hl-4">result</span><span class="hl-1">.</span><span class="hl-4">audio</span><span class="hl-1">);</span><br/><br/><span class="hl-1">  </span><span class="hl-7">// Multi-speaker / multi-style voices:</span><br/><span class="hl-1">  </span><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-6">excited</span><span class="hl-1"> = </span><span class="hl-3">await</span><span class="hl-1"> </span><span class="hl-4">tts</span><span class="hl-1">.</span><span class="hl-0">synthesize</span><span class="hl-1">(</span><span class="hl-2">&quot;What wonderful news!&quot;</span><span class="hl-1">, {</span><br/><span class="hl-1">    </span><span class="hl-4">speakerId:</span><span class="hl-1"> </span><span class="hl-8">1</span><span class="hl-1">,</span><br/><span class="hl-1">  });</span><br/><span class="hl-1">  </span><span class="hl-4">fs</span><span class="hl-1">.</span><span class="hl-0">writeFileSync</span><span class="hl-1">(</span><span class="hl-2">&quot;./excited.wav&quot;</span><span class="hl-1">, </span><span class="hl-4">excited</span><span class="hl-1">.</span><span class="hl-4">audio</span><span class="hl-1">);</span><br/><span class="hl-1">}</span><br/><br/><span class="hl-0">main</span><span class="hl-1">().</span><span class="hl-0">catch</span><span class="hl-1">(</span><span class="hl-4">console</span><span class="hl-1">.</span><span class="hl-4">error</span><span class="hl-1">);</span>
+</code><button type="button">Copy</button></pre>
+
+<p>See <code>examples/example-native.ts</code> (run with <code>npx tsx examples/example-native.ts</code>).</p>
+<h2 id="catalog-models-hugging-face-and-custom-mode" class="tsd-anchor-link">Catalog models (Hugging Face) and custom mode<a href="#catalog-models-hugging-face-and-custom-mode" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<pre><code class="ts"><span class="hl-3">import</span><span class="hl-1"> {</span><br/><span class="hl-1">  </span><span class="hl-4">getPiperModelMetadata</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-4">getPiperModelsByLanguage</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-4">listPiperModels</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-4">PiperNativeTTS</span><span class="hl-1">,</span><br/><span class="hl-1">} </span><span class="hl-3">from</span><span class="hl-1"> </span><span class="hl-2">&quot;pipertts&quot;</span><span class="hl-1">;</span><br/><br/><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-6">models</span><span class="hl-1"> = </span><span class="hl-3">await</span><span class="hl-1"> </span><span class="hl-0">listPiperModels</span><span class="hl-1">();</span><br/><span class="hl-4">console</span><span class="hl-1">.</span><span class="hl-0">log</span><span class="hl-1">(</span><span class="hl-4">models</span><span class="hl-1">.</span><span class="hl-0">slice</span><span class="hl-1">(</span><span class="hl-8">0</span><span class="hl-1">, </span><span class="hl-8">5</span><span class="hl-1">)); </span><span class="hl-7">// first catalog ids + &quot;custom&quot;</span><br/><br/><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-6">metadata</span><span class="hl-1"> = </span><span class="hl-3">await</span><span class="hl-1"> </span><span class="hl-0">getPiperModelMetadata</span><span class="hl-1">(</span><span class="hl-2">&quot;en_US-lessac-medium&quot;</span><span class="hl-1">);</span><br/><span class="hl-4">console</span><span class="hl-1">.</span><span class="hl-0">log</span><span class="hl-1">(</span><span class="hl-4">metadata</span><span class="hl-1">?.</span><span class="hl-4">languageCode</span><span class="hl-1">, </span><span class="hl-4">metadata</span><span class="hl-1">?.</span><span class="hl-4">quality</span><span class="hl-1">, </span><span class="hl-4">metadata</span><span class="hl-1">?.</span><span class="hl-4">numSpeakers</span><span class="hl-1">);</span><br/><br/><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-6">englishModels</span><span class="hl-1"> = </span><span class="hl-3">await</span><span class="hl-1"> </span><span class="hl-0">getPiperModelsByLanguage</span><span class="hl-1">(</span><span class="hl-2">&quot;en&quot;</span><span class="hl-1">);</span><br/><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-6">frenchModels</span><span class="hl-1"> = </span><span class="hl-3">await</span><span class="hl-1"> </span><span class="hl-0">getPiperModelsByLanguage</span><span class="hl-1">(</span><span class="hl-2">&quot;fr_FR&quot;</span><span class="hl-1">);</span><br/><span class="hl-4">console</span><span class="hl-1">.</span><span class="hl-0">log</span><span class="hl-1">(</span><span class="hl-4">englishModels</span><span class="hl-1">.</span><span class="hl-4">length</span><span class="hl-1">, </span><span class="hl-4">frenchModels</span><span class="hl-1">.</span><span class="hl-4">length</span><span class="hl-1">);</span>
+</code><button type="button">Copy</button></pre>
+
+<p><code>getPiperModelMetadata(&quot;custom&quot;)</code> returns <code>null</code>.
+<code>getPiperModelsByLanguage(&quot;en&quot;)</code> matches all variants like <code>en_US</code>, <code>en_GB</code>, etc.</p>
+<h2 id="piperhub-catalog-and-direct-urls" class="tsd-anchor-link">PiperHub catalog and direct URLs<a href="#piperhub-catalog-and-direct-urls" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<p><a href="https://piperhub.org">PiperHub</a> indexes ~500 community voices (GLaDOS,
+game characters, finetunes) that the rhasspy manifest above does not cover.
+Each entry points at a Hugging Face repo; downloads go straight to HF:</p>
+<pre><code class="ts"><span class="hl-3">import</span><span class="hl-1"> {</span><br/><span class="hl-1">  </span><span class="hl-4">getPiperHubModelMetadata</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-4">getPiperHubModelsByLanguage</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-4">listPiperHubModels</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-4">PiperNativeTTS</span><span class="hl-1">,</span><br/><span class="hl-1">} </span><span class="hl-3">from</span><span class="hl-1"> </span><span class="hl-2">&quot;pipertts&quot;</span><span class="hl-1">;</span><br/><br/><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-6">slugs</span><span class="hl-1"> = </span><span class="hl-3">await</span><span class="hl-1"> </span><span class="hl-0">listPiperHubModels</span><span class="hl-1">(); </span><span class="hl-7">// 500+ slugs</span><br/><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-6">meta</span><span class="hl-1"> = </span><span class="hl-3">await</span><span class="hl-1"> </span><span class="hl-0">getPiperHubModelMetadata</span><span class="hl-1">(</span><span class="hl-2">&quot;glados-french-medium-voice&quot;</span><span class="hl-1">);</span><br/><span class="hl-4">console</span><span class="hl-1">.</span><span class="hl-0">log</span><span class="hl-1">(</span><span class="hl-4">meta</span><span class="hl-1">.</span><span class="hl-4">repo</span><span class="hl-1">, </span><span class="hl-4">meta</span><span class="hl-1">.</span><span class="hl-4">onnxUrl</span><span class="hl-1">, </span><span class="hl-4">meta</span><span class="hl-1">.</span><span class="hl-4">pageUrl</span><span class="hl-1">);</span><br/><br/><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-6">french</span><span class="hl-1"> = </span><span class="hl-3">await</span><span class="hl-1"> </span><span class="hl-0">getPiperHubModelsByLanguage</span><span class="hl-1">(</span><span class="hl-2">&quot;fr&quot;</span><span class="hl-1">);</span><br/><br/><span class="hl-7">// Any of these selects the voice — bare slugs also work as `model`:</span><br/><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-6">tts</span><span class="hl-1"> = </span><span class="hl-3">await</span><span class="hl-1"> </span><span class="hl-4">PiperNativeTTS</span><span class="hl-1">.</span><span class="hl-0">load</span><span class="hl-1">({</span><br/><span class="hl-1">  </span><span class="hl-4">model:</span><span class="hl-1"> </span><span class="hl-2">&quot;hub:glados-french-medium-voice&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-4">modelsDir:</span><span class="hl-1"> </span><span class="hl-2">&quot;./models&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">});</span>
+</code><button type="button">Copy</button></pre>
+
+<p>Accepted <code>model</code> forms: rhasspy id/alias, <code>hub:&lt;slug&gt;</code>, full
+<code>piperhub.org/model/&lt;slug&gt;/</code> page URL, or bare slug. <code>PiperTTS.create</code> and
+<code>resolveModelPathFromOptions</code> accept the same values, plus <code>modelUrl</code> /
+<code>configUrl</code> for direct downloads (cached under
+<code>modelsDir/url-&lt;hash&gt;/</code>, <code>configUrl</code> defaults to <code>&lt;modelUrl&gt;.json</code>).</p>
+<p>Robustness: PiperHub downloads first try the voice's own repo, then fall
+back automatically to the community mirror
+(<code>fox3000foxy/piper-voices-collection</code>) when the author repo no longer
+serves the files. Voices the catalog flags <code>usable: false</code> (broken files,
+or <code>piperPlus</code> format needing a forked runtime) are refused with an
+explanatory error — metadata exposes <code>usable</code> / <code>piperPlus</code> so you can
+filter them via <code>getPiperHubModelMetadata()</code>.</p>
+<h2 id="phonemizers" class="tsd-anchor-link">Phonemizers<a href="#phonemizers" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<p>Every Piper <code>phoneme_type</code> is supported, verified against the Python reference:</p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Engine</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>espeak</code></td>
+<td>N-API espeak-ng bridge (prebuilds) or CLI fallback</td>
+<td>Byte-identical clauses</td>
+</tr>
+<tr>
+<td><code>text</code></td>
+<td>Codepoint passthrough</td>
+<td>Trivial</td>
+</tr>
+<tr>
+<td><code>hebrew</code></td>
+<td>Nakdimon ONNX + rule-based IPA</td>
+<td>Identical outputs</td>
+</tr>
+<tr>
+<td><code>lithuanian</code></td>
+<td>espeak + 189k-entry stress dictionary</td>
+<td>Identical outputs</td>
+</tr>
+<tr>
+<td><code>pinyin</code></td>
+<td>g2pW BERT ONNX + WordPiece</td>
+<td>Polyphonic disambiguation works (<code>银行→yínháng</code>)</td>
+</tr>
+<tr>
+<td><code>thai</code></td>
+<td>Real TLTK unmodified under Pyodide/WASM</td>
+<td>7/7 identical; first call takes seconds, later calls are fast</td>
+</tr>
+<tr>
+<td><code>japanese</code></td>
+<td>lindera-wasm + UniDic + TS morae engine</td>
+<td>Segments exact; <strong>no lexical pitch accent</strong> — UniDic ships no accent data</td>
+</tr>
+</tbody>
+</table>
+<p>Arabic <code>ar</code> voices are diacritized with tashkeel automatically (disable with <code>useTashkeel: false</code>).</p>
+<p>Inspect phonemization without synthesizing:</p>
+<pre><code class="ts"><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-6">phonemes</span><span class="hl-1"> = </span><span class="hl-3">await</span><span class="hl-1"> </span><span class="hl-4">tts</span><span class="hl-1">.</span><span class="hl-0">phonemize</span><span class="hl-1">(</span><span class="hl-2">&quot;Hello world.&quot;</span><span class="hl-1">);</span>
+</code><button type="button">Copy</button></pre>
+
+<h2 id="output-formats" class="tsd-anchor-link">Output formats<a href="#output-formats" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<p><code>wav</code> (default), <code>raw</code> PCM, <code>mp3</code>, <code>ogg</code>, <code>opus</code> — set via <code>outputFormat</code>
+per call, or write straight to disk:</p>
+<pre><code class="ts"><span class="hl-3">await</span><span class="hl-1"> </span><span class="hl-4">tts</span><span class="hl-1">.</span><span class="hl-0">synthesize</span><span class="hl-1">(</span><span class="hl-2">&quot;Saved directly.&quot;</span><span class="hl-1">, {</span><br/><span class="hl-1">  </span><span class="hl-4">outputFormat:</span><span class="hl-1"> </span><span class="hl-2">&quot;mp3&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-4">outputFile:</span><span class="hl-1"> </span><span class="hl-2">&quot;./direct.mp3&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">});</span>
+</code><button type="button">Copy</button></pre>
+
+<h2 id="espeak-bridge" class="tsd-anchor-link">Espeak bridge<a href="#espeak-bridge" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<p><code>src/native/espeak-bridge/</code> is an N-API port of <code>espeakbridge.c</code>
+(byte-identical phonemes). Prebuilds ship with the package
+(<code>npm run build:prebuilds</code>, CI in <code>prebuilds.yml</code>); local build with
+<code>npm run build:espeak-bridge</code> (needs <code>libespeak-ng-dev</code>). Without an addon
+it falls back to the <code>espeak-ng</code> CLI (~15ms/sentence). Set
+<code>PIPER_ESPEAK_BRIDGE=0</code> to force the CLI.</p>
+<blockquote>
+<p>License note: <code>src/native/</code> ports piper1-gpl (GPL-3.0-or-later);
+<code>src/native/chinese.ts</code> ports g2pw (Apache-2.0, Yi-Chang Chen);
+Thai runs TLTK (BSD-3-Clause, Chulalongkorn University) unmodified;
+Japanese segments with lindera-wasm + UniDic (MIT, no accent data);
+the phonemizer data bundles keep their own licenses (tashkeel/hebrew:
+GPL/MIT, Lithuanian TSVs: CC-BY-4.0, g2pw model: Apache-2.0).</p>
+</blockquote>
+<h2 id="module-usage-esm-and-commonjs" class="tsd-anchor-link">Module usage (ESM and CommonJS)<a href="#module-usage-esm-and-commonjs" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<p>ESM:</p>
+<pre><code class="js"><span class="hl-3">import</span><span class="hl-1"> { </span><span class="hl-4">PiperNativeTTS</span><span class="hl-1"> } </span><span class="hl-3">from</span><span class="hl-1"> </span><span class="hl-2">&quot;pipertts&quot;</span><span class="hl-1">;</span><br/><br/><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-6">tts</span><span class="hl-1"> = </span><span class="hl-3">await</span><span class="hl-1"> </span><span class="hl-4">PiperNativeTTS</span><span class="hl-1">.</span><span class="hl-0">load</span><span class="hl-1">({</span><br/><span class="hl-1">  </span><span class="hl-4">modelPath:</span><span class="hl-1"> </span><span class="hl-2">&quot;./models/en_US-lessac-medium.onnx&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">});</span>
+</code><button type="button">Copy</button></pre>
+
+<p>CommonJS:</p>
+<pre><code class="js"><span class="hl-5">const</span><span class="hl-1"> { </span><span class="hl-6">PiperNativeTTS</span><span class="hl-1"> } = </span><span class="hl-0">require</span><span class="hl-1">(</span><span class="hl-2">&quot;pipertts&quot;</span><span class="hl-1">);</span><br/><br/><span class="hl-5">async</span><span class="hl-1"> </span><span class="hl-5">function</span><span class="hl-1"> </span><span class="hl-0">boot</span><span class="hl-1">() {</span><br/><span class="hl-1">  </span><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-6">tts</span><span class="hl-1"> = </span><span class="hl-3">await</span><span class="hl-1"> </span><span class="hl-4">PiperNativeTTS</span><span class="hl-1">.</span><span class="hl-0">load</span><span class="hl-1">({</span><br/><span class="hl-1">    </span><span class="hl-4">modelPath:</span><span class="hl-1"> </span><span class="hl-2">&quot;./models/en_US-lessac-medium.onnx&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">  });</span><br/><br/><span class="hl-1">  </span><span class="hl-3">await</span><span class="hl-1"> </span><span class="hl-4">tts</span><span class="hl-1">.</span><span class="hl-0">synthesize</span><span class="hl-1">(</span><span class="hl-2">&quot;Hello from CommonJS&quot;</span><span class="hl-1">, {</span><br/><span class="hl-1">    </span><span class="hl-4">outputFile:</span><span class="hl-1"> </span><span class="hl-2">&quot;./cjs.wav&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">  });</span><br/><span class="hl-1">}</span><br/><br/><span class="hl-0">boot</span><span class="hl-1">().</span><span class="hl-0">catch</span><span class="hl-1">(</span><span class="hl-4">console</span><span class="hl-1">.</span><span class="hl-4">error</span><span class="hl-1">);</span>
+</code><button type="button">Copy</button></pre>
+
+<h2 id="api" class="tsd-anchor-link">API<a href="#api" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<h3 id="_" class="tsd-anchor-link"><code>PiperNativeTTS.load(options)</code><a href="#_" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<p>Loads the ONNX model and resolves phonemizer resources (downloading data on first use).</p>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Type</th>
+<th>Required</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>modelPath</code></td>
+<td><code>string</code></td>
+<td>one of <code>modelPath</code> / <code>modelUrl</code> / <code>model</code></td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>modelUrl</code></td>
+<td><code>string</code></td>
+<td>one of <code>modelPath</code> / <code>modelUrl</code> / <code>model</code></td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>model</code></td>
+<td><code>string</code></td>
+<td>one of <code>modelPath</code> / <code>modelUrl</code> / <code>model</code></td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>configPath</code></td>
+<td><code>string</code></td>
+<td>no</td>
+<td>auto (<code>&lt;model&gt;.json</code>)</td>
+</tr>
+<tr>
+<td><code>configUrl</code></td>
+<td><code>string</code></td>
+<td>no</td>
+<td>auto (<code>&lt;modelUrl&gt;.json</code>)</td>
+</tr>
+<tr>
+<td><code>modelsDir</code></td>
+<td><code>string</code></td>
+<td>no</td>
+<td><code>&quot;models&quot;</code> (download cache)</td>
+</tr>
+<tr>
+<td><code>numThreads</code></td>
+<td><code>number</code></td>
+<td>no</td>
+<td>ONNX default</td>
+</tr>
+<tr>
+<td><code>espeakBinary</code></td>
+<td><code>string</code></td>
+<td>no</td>
+<td><code>espeak-ng</code></td>
+</tr>
+<tr>
+<td><code>session</code></td>
+<td><code>NativeSession</code></td>
+<td>no</td>
+<td>created from <code>modelPath</code></td>
+</tr>
+<tr>
+<td><code>nativeDataDir</code></td>
+<td><code>string</code></td>
+<td>no</td>
+<td><code>&quot;./piper-data&quot;</code></td>
+</tr>
+<tr>
+<td><code>tashkeelModelDir</code> / <code>nakdimonModelPath</code> / <code>g2pwModelDir</code> / <code>lithuanianDataDir</code> / <code>tltkDataDir</code> / <code>unidicDir</code></td>
+<td><code>string</code></td>
+<td>no</td>
+<td>auto-downloaded</td>
+</tr>
+<tr>
+<td><code>useTashkeel</code></td>
+<td><code>boolean</code></td>
+<td>no</td>
+<td><code>true</code></td>
+</tr>
+<tr>
+<td><code>taskeenThreshold</code></td>
+<td><code>number</code></td>
+<td>no</td>
+<td><code>0.8</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="_-1" class="tsd-anchor-link"><code>tts.synthesize(text, options?)</code><a href="#_-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<p>Synthesizes speech and returns <code>{ audio: Buffer, sampleRate, text }</code>.
+Audio arrives sentence by sentence from <code>synthesizeChunks()</code>; chunks are
+concatenated with <code>sentenceSilence</code> gaps, then optionally transcoded.</p>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Type</th>
+<th>Default</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>speakerId</code></td>
+<td><code>number</code></td>
+<td>config default</td>
+<td>Multi-speaker/style index</td>
+</tr>
+<tr>
+<td><code>noiseScale</code></td>
+<td><code>number</code></td>
+<td><code>0.667</code></td>
+<td>Voice variability (output is stochastic)</td>
+</tr>
+<tr>
+<td><code>noiseWScale</code></td>
+<td><code>number</code></td>
+<td><code>0.8</code></td>
+<td>Timing variability</td>
+</tr>
+<tr>
+<td><code>lengthScale</code></td>
+<td><code>number</code></td>
+<td><code>1.0</code></td>
+<td><code>&gt;1</code> slower, <code>&lt;1</code> faster</td>
+</tr>
+<tr>
+<td><code>sentenceSilence</code></td>
+<td><code>number</code></td>
+<td><code>0</code></td>
+<td>Gap between sentences, in seconds</td>
+</tr>
+<tr>
+<td><code>outputFormat</code></td>
+<td><code>&quot;wav&quot; | &quot;raw&quot; | &quot;mp3&quot; | &quot;ogg&quot; | &quot;opus&quot;</code></td>
+<td><code>&quot;wav&quot;</code></td>
+<td>Transcoded when needed</td>
+</tr>
+<tr>
+<td><code>outputFile</code></td>
+<td><code>string</code></td>
+<td>-</td>
+<td>Also writes the final audio there</td>
+</tr>
+<tr>
+<td><code>normalizeAudio</code></td>
+<td><code>boolean</code></td>
+<td><code>true</code></td>
+<td>Scale to peak</td>
+</tr>
+<tr>
+<td><code>volume</code></td>
+<td><code>number</code></td>
+<td><code>1.0</code></td>
+<td>Gain multiplier</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_-2" class="tsd-anchor-link"><code>tts.phonemize(text)</code> / <code>tts.synthesizeChunks(text, options?)</code><a href="#_-2" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<p>Lower-level access: <code>phonemize</code> returns phonemes grouped by sentence;
+<code>synthesizeChunks</code> is an async generator yielding <code>{ sampleRate, phonemes, phonemeIds, pcm16 }</code> per sentence.</p>
+<h3 id="_-3" class="tsd-anchor-link"><code>tts.getConfig()</code> / <code>tts.getModelPath()</code><a href="#_-3" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<p>Introspect the resolved voice config and model path.</p>
+<h2 id="legacy-cli-wrapper-" class="tsd-anchor-link">Legacy CLI wrapper (<code>PiperTTS</code>)<a href="#legacy-cli-wrapper-" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<p><code>PiperTTS</code> shells out to <code>python3 -m piper</code> (one process per synthesis).
+It stays available for environments where the native engine cannot run,
+but it is ~10x slower and needs Python plus the Piper module installed:</p>
+<pre><code class="ts"><span class="hl-3">import</span><span class="hl-1"> { </span><span class="hl-4">PiperTTS</span><span class="hl-1"> } </span><span class="hl-3">from</span><span class="hl-1"> </span><span class="hl-2">&quot;pipertts&quot;</span><span class="hl-1">;</span><br/><br/><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-6">tts</span><span class="hl-1"> = </span><span class="hl-3">await</span><span class="hl-1"> </span><span class="hl-4">PiperTTS</span><span class="hl-1">.</span><span class="hl-0">create</span><span class="hl-1">({</span><br/><span class="hl-1">  </span><span class="hl-4">modelPath:</span><span class="hl-1"> </span><span class="hl-2">&quot;./models/en_US-lessac-medium.onnx&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">});</span><br/><span class="hl-7">// or: piperBinaryPath, warmUpText/skipWarmup, synthesisTimeoutMs,</span><br/><span class="hl-7">// defaultOptions (PiperInferenceOptions: modelPath, configPath, outputFile,</span><br/><span class="hl-7">// outputFormat, speakerId, noiseScale, noiseWScale, lengthScale,</span><br/><span class="hl-7">// sentenceSilence, jsonInput, numThreads, useCuda, logLevel, timeoutMs)</span>
+</code><button type="button">Copy</button></pre>
+
+<p><code>PiperTTS.create</code> performs a warm-up inference unless <code>skipWarmup</code> is set.
+See <code>examples/example.ts</code>.</p>
+<h2 id="common-failures" class="tsd-anchor-link">Common failures<a href="#common-failures" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<ul>
+<li><code>model file not found</code>: verify <code>modelPath</code> is correct.</li>
+<li><code>unknown model &quot;...&quot;</code>: call <code>listPiperModels()</code> and use one of returned ids, or set <code>model: &quot;custom&quot;</code>.</li>
+<li><code>onnxruntime-node could not be loaded</code>: reinstall dependencies (<code>npm install</code>).</li>
+<li><code>No module named piper</code> / <code>Python not found</code> (wrapper only): install Python 3 and the Piper module, verify <code>python3 -m piper --help</code>.</li>
+<li>Process exits with code non-zero (wrapper only): inspect stderr in the thrown error.</li>
+</ul>
+<h2 id="version-compatibility" class="tsd-anchor-link">Version compatibility<a href="#version-compatibility" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Supported</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Node.js</td>
+<td>18+</td>
+</tr>
+<tr>
+<td>TypeScript</td>
+<td>5+</td>
+</tr>
+<tr>
+<td>Runtime</td>
+<td>Linux x64/arm64, Windows x64</td>
+</tr>
+</tbody>
+</table>
+<p>Notes:</p>
+<ul>
+<li>Native inference needs no Python; only the legacy wrapper does.</li>
+<li>Actual CUDA availability depends on your Piper model and host GPU setup.</li>
+</ul>
+<h2 id="development" class="tsd-anchor-link">Development<a href="#development" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<pre><code class="bash"><span class="hl-0">npm</span><span class="hl-1"> </span><span class="hl-2">install</span><br/><span class="hl-0">npm</span><span class="hl-1"> </span><span class="hl-2">run</span><span class="hl-1"> </span><span class="hl-2">build</span><br/><span class="hl-0">npm</span><span class="hl-1"> </span><span class="hl-2">run</span><span class="hl-1"> </span><span class="hl-2">typecheck</span><br/><span class="hl-0">npm</span><span class="hl-1"> </span><span class="hl-2">test</span>
+</code><button type="button">Copy</button></pre>
+
+<h2 id="changelog" class="tsd-anchor-link">Changelog<a href="#changelog" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<h3 id="120-native-first-readme" class="tsd-anchor-link">1.2.0 — Native-first README<a href="#120-native-first-readme" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul>
+<li>README rewritten around <code>PiperNativeTTS</code>: the CLI wrapper moves to a
+clearly-labeled legacy section; no Python in setup, platform, or API docs.</li>
+</ul>
+<h3 id="116-examples-and-hot-loop-audit" class="tsd-anchor-link">1.1.6 — Examples and hot-loop audit<a href="#116-examples-and-hot-loop-audit" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul>
+<li><code>examples/example-native.ts</code>: same flow as <code>example.ts</code>, fully in-process.</li>
+<li><code>resolveModelPathFromOptions</code> now public (catalog ids for native users).</li>
+<li>Performance audit: g2pw label building O(n²)→O(n), char lookups → Map/Set,
+index-based wordize, bulk int16 writes, fused audio pipeline (≤1 LSB),
+<code>matchAll</code> Thai runs, zero-copy WAV parse. Inference was already 99%+.</li>
+</ul>
+<h3 id="115-install-fix" class="tsd-anchor-link">1.1.5 — Install fix<a href="#115-install-fix" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul>
+<li><code>npm i</code> failed: the <code>install</code> script was absent from the tarball.
+<code>files</code> now ships <code>scripts/install-bridge.js</code>, <code>binding.gyp</code>, and the
+bridge C source (verified with a blank-dir end-user install).</li>
+</ul>
+<h3 id="114-build-and-ci-fixes" class="tsd-anchor-link">1.1.4 — Build and CI fixes<a href="#114-build-and-ci-fixes" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul>
+<li>espeak bridge compiles on strict glibc (<code>_GNU_SOURCE</code> for <code>RTLD_DEFAULT</code>).</li>
+<li><code>lint</code>/<code>check</code>/<code>typecheck</code> battery green: root <code>biome.json</code>
+(<code>useNamingConvention</code> off — public API and upstream <code>snake_case</code> must
+stay), all other violations fixed, no logic changes.</li>
+<li>CI cache key <code>bun.lockb</code> → <code>bun.lock</code>, real <code>tsc --noEmit</code> step,
+<code>bun.lock</code> synced (missing <code>opusscript</code>/<code>lindera</code>/<code>pyodide</code> broke CI tests).</li>
+<li>Prebuild matrix: linux x64/arm64 + mac arm64 green; Windows dropped
+(choco ships no dev headers — CLI fallback covers it).</li>
+</ul>
+<h3 id="113-package-contents" class="tsd-anchor-link">1.1.3 — Package contents<a href="#113-package-contents" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul>
+<li>Compiled <code>*.test.js</code> no longer ships in the npm tarball
+(<code>tsconfig.build.json</code>; typecheck still covers tests).</li>
+<li>linux-x64 bridge prebuild ships inside the tarball (built in CI).</li>
+</ul>
+<h3 id="112-portable-bridge-build" class="tsd-anchor-link">1.1.2 — Portable bridge build<a href="#112-portable-bridge-build" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul>
+<li>espeak bridge resolves <code>espeak_TextToPhonemesWithTerminator</code> at runtime
+(<code>dlsym</code>/<code>GetProcAddress</code>): old headers compile, pre-1.52 libraries
+degrade to single-clause output.</li>
+<li><code>prebuild</code> script renamed to <code>build:prebuilds</code> (npm treated it as a
+pre-hook of <code>build</code>, running prebuildify on every build).</li>
+</ul>
+<h3 id="111-optional-bridge-install" class="tsd-anchor-link">1.1.1 — Optional bridge install<a href="#111-optional-bridge-install" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul>
+<li>npm auto-runs <code>node-gyp rebuild</code> for packages with a root <code>binding.gyp</code>;
+the new tolerant <code>scripts/install-bridge.js</code> prefers prebuilds, tries a
+source build, and warns instead of failing (CLI fallback).</li>
+</ul>
+<h3 id="110-native-inference-no-python-required" class="tsd-anchor-link">1.1.0 — Native inference (no Python required)<a href="#110-native-inference-no-python-required" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<p>Measured on <code>en_US-lessac-medium</code>: ~2.2s/line (CLI wrapper) vs ~0.22s/line
+(native) — roughly 10x, from killing the per-call Python spawn + model reload.</p>
+<p>Added:</p>
+<ul>
+<li><code>PiperNativeTTS</code> — persistent in-process ONNX session (<code>onnxruntime-node</code>),
+one inference per sentence, streaming chunks.</li>
+<li>All 7 <code>phoneme_type</code> values ported and verified byte-identical (or
+equivalent) against the Python reference:
+<ul>
+<li><code>espeak</code>/<code>text</code> — N-API bridge (byte-identical clauses) with CLI fallback.</li>
+<li><code>hebrew</code> — Nakdimon ONNX + 494 lines of IPA rules, identical outputs.</li>
+<li><code>lithuanian</code> — espeak + 189k-entry stress dictionary, identical outputs.</li>
+<li><code>pinyin</code> — full g2pW BERT port (WordPiece, features, 159MB graph);
+polyphonic disambiguation works (<code>银行→yínháng</code>).</li>
+<li><code>thai</code> — real TLTK unmodified under Pyodide/WASM, 7/7 identical.</li>
+<li><code>japanese</code> — lindera-wasm + UniDic segmentation with a TS morae engine,
+4/4 segment-identical to pyopenjtalk (no lexical pitch accent — UniDic
+ships no accent data; documented limitation).</li>
+<li>Arabic <code>ar</code> voices get tashkeel diacritization automatically.</li>
+</ul>
+</li>
+<li>Output formats <code>wav</code>/<code>raw</code>/<code>mp3</code>/<code>ogg</code>/<code>opus</code> in both engines: ffmpeg when
+present, otherwise pure-JS fallbacks (lamejs for mp3, opusscript + Ogg
+muxer for opus — 0.993 correlation vs source).</li>
+<li>Phonemizer data downloads on demand into <code>./piper-data/</code> (g2pw ~280MB,
+UniDic ~200MB, TLTK ~20MB, others small).</li>
+<li>espeak bridge prebuilds (<code>prebuildify</code>, CI matrix linux/win/macos).</li>
+<li><code>bun test</code> suite: 71 tests (RBNF tables, transformer vectors, Ogg CRC,
+gated real-model e2e). <code>npm test</code> was broken (<code>biome test</code> does not exist).</li>
+<li>Wrapper hardening: honest <code>outputFormat</code>, numeric range validation,
+synthesis timeouts, streaming catalog downloads with size/md5 checks,
+executable checks with PATHEXT support, skippable warm-up.</li>
+</ul>
+<p>Not ported (documented): <code>marine</code> accent model, Pyodide-independent Thai,
+lexical Japanese pitch accent.</p>
+<h3 id="103-and-earlier" class="tsd-anchor-link">1.0.3 and earlier<a href="#103-and-earlier" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<p>Thin TypeScript wrapper around <code>python3 -m piper</code>: process spawn per call,
+WAV-or-tempfile output, Hugging Face catalog helpers.</p>
+</div></div>
+<div class="col-sidebar">
+<div class="page-menu">
+<div class="tsd-navigation settings">
+<details class="tsd-accordion"><summary class="tsd-accordion-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="assets/icons.svg#icon-chevronDown"></use></svg>
+<h3>Settings</h3></summary>
+<div class="tsd-accordion-details">
+<div class="tsd-filter-visibility"><span class="settings-label">Member Visibility</span>
+<ul id="tsd-filter-options">
+<li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-protected" name="protected"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Protected</span></label></li>
+<li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-inherited" name="inherited" checked/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Inherited</span></label></li>
+<li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-external" name="external"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>External</span></label></li></ul></div>
+<div class="tsd-theme-toggle"><label class="settings-label" for="tsd-theme">Theme</label><select id="tsd-theme"><option value="os">OS</option><option value="light">Light</option><option value="dark">Dark</option></select></div></div></details></div>
+<details open class="tsd-accordion tsd-page-navigation"><summary class="tsd-accordion-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="assets/icons.svg#icon-chevronDown"></use></svg>
+<h3>On This Page</h3></summary>
+<div class="tsd-accordion-details"><a href="#pipertts"><span>pipertts</span></a>
+<ul>
+<li><a href="#what-you-get"><span>What you get</span></a></li>
+<li><a href="#platform-support"><span>Platform support</span></a></li>
+<li><a href="#install"><span>Install</span></a></li>
+<li><a href="#required-setup"><span>Required setup</span></a></li>
+<li><a href="#quick-start"><span>Quick start</span></a></li>
+<li><a href="#catalog-models-hugging-face-and-custom-mode"><span>Catalog models (<wbr/>Hugging <wbr/>Face) and custom mode</span></a></li>
+<li><a href="#piperhub-catalog-and-direct-urls"><span>Piper<wbr/>Hub catalog and direct <wbr/>UR<wbr/>Ls</span></a></li>
+<li><a href="#phonemizers"><span>Phonemizers</span></a></li>
+<li><a href="#output-formats"><span>Output formats</span></a></li>
+<li><a href="#espeak-bridge"><span>Espeak bridge</span></a></li>
+<li><a href="#module-usage-esm-and-commonjs"><span>Module usage (<wbr/>ESM and <wbr/>Common<wbr/>JS)</span></a></li>
+<li><a href="#api"><span>API</span></a></li>
+<li>
+<ul>
+<li><a href="#_"><span></span></a></li>
+<li><a href="#_-1"><span></span></a></li>
+<li><a href="#_-2"><span> / </span></a></li>
+<li><a href="#_-3"><span> / </span></a></li></ul></li>
+<li><a href="#legacy-cli-wrapper-"><span>Legacy <wbr/>CLI wrapper ()</span></a></li>
+<li><a href="#common-failures"><span>Common failures</span></a></li>
+<li><a href="#version-compatibility"><span>Version compatibility</span></a></li>
+<li><a href="#development"><span>Development</span></a></li>
+<li><a href="#changelog"><span>Changelog</span></a></li>
+<li>
+<ul>
+<li><a href="#120-native-first-readme"><span>1.2.0 — <wbr/>Native-<wbr/>first <wbr/>README</span></a></li>
+<li><a href="#116-examples-and-hot-loop-audit"><span>1.1.6 — <wbr/>Examples and hot-<wbr/>loop audit</span></a></li>
+<li><a href="#115-install-fix"><span>1.1.5 — <wbr/>Install fix</span></a></li>
+<li><a href="#114-build-and-ci-fixes"><span>1.1.4 — <wbr/>Build and <wbr/>CI fixes</span></a></li>
+<li><a href="#113-package-contents"><span>1.1.3 — <wbr/>Package contents</span></a></li>
+<li><a href="#112-portable-bridge-build"><span>1.1.2 — <wbr/>Portable bridge build</span></a></li>
+<li><a href="#111-optional-bridge-install"><span>1.1.1 — <wbr/>Optional bridge install</span></a></li>
+<li><a href="#110-native-inference-no-python-required"><span>1.1.0 — <wbr/>Native inference (no <wbr/>Python required)</span></a></li>
+<li><a href="#103-and-earlier"><span>1.0.3 and earlier</span></a></li></ul></li></ul></div></details></div>
+<div class="site-menu">
+<nav class="tsd-navigation"><a href="modules.html">pipertts - v1.2.0</a>
+<ul class="tsd-small-nested-navigation" id="tsd-nav-container">
+<li>Loading...</li></ul></nav></div></div></div><footer>
+<p class="tsd-generator">Generated using <a href="https://typedoc.org/" target="_blank">TypeDoc</a></p></footer>
+<div class="overlay"></div></body></html>
