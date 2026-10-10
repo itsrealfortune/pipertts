@@ -1,0 +1,44 @@
+name: Prebuilds
+
+on:
+  workflow_dispatch:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  prebuild:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            arch: x64
+            install: sudo apt-get update && sudo apt-get install -y espeak-ng libespeak-ng-dev
+          - os: ubuntu-22.04-arm
+            arch: arm64
+            install: sudo apt-get update && sudo apt-get install -y espeak-ng libespeak-ng-dev
+          # Windows: choco espeak-ng ships no dev headers, and building
+          # espeak-ng from source needs an MSVC CMake superbuild (see
+          # piper1-gpl libpiper). Windows users use the CLI fallback.
+          # Follow-up: build espeak-ng from source on windows-latest.
+          - os: macos-latest
+            arch: arm64
+            install: brew install espeak-ng
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+
+      - run: ${{ matrix.install }}
+      - run: npm install --no-save prebuildify node-gyp
+      - run: npx prebuildify --napi --strip -n espeak_bridge --arch ${{ matrix.arch }}
+
+      - uses: actions/upload-artifact@v6
+        with:
+          name: prebuilds-${{ matrix.os }}-${{ matrix.arch }}
+          path: prebuilds/
