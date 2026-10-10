@@ -35,11 +35,20 @@ async function loadOrt(): Promise<OrtLike> {
 
 /** High-level inference session: phoneme ids + scales to float32 audio (voice.py:498-575). */
 export interface NativeSession {
+	/**
+	 * Runs one inference and returns mono float32 audio samples.
+	 *
+	 * @param {number[]} feeds.phonemeIds - Phoneme ids including BOS/EOS padding.
+	 * @param {[number, number, number]} feeds.scales - `[noiseScale, lengthScale, noiseWScale]`.
+	 * @param {number | null} feeds.speakerId - Speaker index, or `null` for single-voice models.
+	 * @returns {Promise<Float32Array>} Raw audio samples at the voice sample rate.
+	 */
 	run(feeds: {
 		phonemeIds: number[];
 		scales: [number, number, number];
 		speakerId: number | null;
 	}): Promise<Float32Array>;
+	/** Releases native session resources, when supported. */
 	close?(): Promise<void>;
 }
 

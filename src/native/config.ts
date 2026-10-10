@@ -47,29 +47,49 @@ export interface PiperConfigDict {
 
 /** Normalized voice config with defaults applied. Port of `PiperConfig` in `config.py`. */
 export interface PiperConfig {
+	/** Number of phoneme symbols. */
 	numSymbols: number;
+	/** Number of speakers (1 for single-voice models). */
 	numSpeakers: number;
+	/** Output sample rate in Hz. */
 	sampleRate: number;
+	/** espeak-ng voice identifier (for example, `"fr"`). */
 	espeakVoice: string;
+	/** Phoneme string to ONNX id list mapping. */
 	phonemeIdMap: Record<string, number[]>;
+	/** Phonemizer back-end used by this voice. */
 	phonemeType: PhonemeType;
+	/** Named speaker to id mapping (multi-speaker models). */
 	speakerIdMap: Record<string, number>;
+	/** Piper version that trained the model, when recorded. */
 	piperVersion?: string;
+	/** Default speech-rate multiplier (>1 slower, <1 faster). */
 	lengthScale: number;
+	/** Default voice variability. */
 	noiseScale: number;
+	/** Default timing variability. */
 	noiseWScale: number;
+	/** STFT hop length used for chunk sizing. */
 	hopLength: number;
+	/** Vowel clusters treated as single phonemes, if any. */
 	vowelClusters: Set<string> | null;
+	/** Fallback speaker id when none is requested. */
 	defaultSpeakerId: number;
 }
 
 /** Per-utterance synthesis overrides. Port of `SynthesisConfig` in `config.py`. */
 export interface SynthesisConfig {
+	/** Speaker index for multi-speaker/style models. */
 	speakerId?: number;
+	/** Speech-rate multiplier (>1 slower, <1 faster). */
 	lengthScale?: number;
+	/** Voice variability (output is stochastic). */
 	noiseScale?: number;
+	/** Timing variability. */
 	noiseWScale?: number;
+	/** Scale PCM to peak before output. Default: `true`. */
 	normalizeAudio?: boolean;
+	/** Gain multiplier applied after normalization. Default: `1.0`. */
 	volume?: number;
 }
 
