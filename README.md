@@ -152,6 +152,14 @@ Accepted `model` forms: rhasspy id/alias, `hub:<slug>`, full
 `configUrl` for direct downloads (cached under
 `modelsDir/url-<hash>/`, `configUrl` defaults to `<modelUrl>.json`).
 
+Robustness: PiperHub downloads first try the voice's own repo, then fall
+back automatically to the community mirror
+(`fox3000foxy/piper-voices-collection`) when the author repo no longer
+serves the files. Voices the catalog flags `usable: false` (broken files,
+or `piperPlus` format needing a forked runtime) are refused with an
+explanatory error — metadata exposes `usable` / `piperPlus` so you can
+filter them via `getPiperHubModelMetadata()`.
+
 ## Phonemizers
 
 Every Piper `phoneme_type` is supported, verified against the Python reference:

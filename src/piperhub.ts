@@ -37,6 +37,10 @@ export interface PiperHubModelEntry {
 	voiceNames?: string[];
 	/** Sample rate in Hz. */
 	sampleRate?: number;
+	/** `false` for entries the catalog flags as broken or incompatible. */
+	usable?: boolean;
+	/** `true` when the voice needs the piper-plus forked runtime. */
+	piperPlus?: boolean;
 	/** License string (often empty — check the HF repo). */
 	license?: string;
 	/** Last-update date (`YYYY-MM-DD`). */
@@ -143,6 +147,112 @@ export function piperHubFileUrl(
 	return `https://huggingface.co/${entry.repo}/resolve/main/${rel}`;
 }
 
+/** Hugging Face repo mirroring community voices when author repos go missing. */
+export const PIPERHUB_MIRROR_REPO = "fox3000foxy/piper-voices-collection";
+
+/**
+ * Mirror directory for a `owner/name` repo: `owner--name`.
+ *
+ * @param {string} repo - Hugging Face repo (`owner/name`).
+ * @returns {string} Mirror subdirectory inside {@link PIPERHUB_MIRROR_REPO}.
+ */
+export function mirrorDirForRepo(repo: string): string {
+	return repo.replace("/", "--");
+}
+
+/**
+ * Picks mirror files for a voice from a Hugging Face tree listing.
+ *
+ * The mirror stores `<basename>.onnx` (basenames already ending in `.onnx`
+ * become `*.onnx.onnx`) flat at the mirror dir root, plus `<that>.json`.
+ * Matching is stem-based so both single and double extensions resolve.
+ *
+ * @param {string[]} dirFiles - Full paths from the HF tree API for one mirror dir.
+ * @param {string} mirrorDir - Mirror subdirectory (prefix to strip).
+ * @param {string} onnxBasename - Catalog `.onnx` basename (for example, `en_US-bobby-medium.onnx`).
+ * @returns {{ onnx: string; json: string } | null} Repo-relative mirror paths, or `null` when unmatched.
+ */
+export function selectMirrorFiles(
+	dirFiles: string[],
+	mirrorDir: string,
+	onnxBasename: string,
+): { onnx: string; json: string } | null {
+	const prefix = `${mirrorDir}/`;
+	const names = dirFiles
+		.filter((f) => f.startsWith(prefix))
+		.map((f) => f.slice(prefix.length))
+		.filter((f) => !f.includes("/"));
+	const stem = onnxBasename.replace(/\.onnx$/i, "");
+	const onnxCandidates = names.filter(
+		(n) =>
+			n.toLowerCase().endsWith(".onnx") && !n.toLowerCase().endsWith(".json"),
+	);
+	const exact = onnxCandidates.find(
+		(n) => n.toLowerCase() === `${stem.toLowerCase()}.onnx`,
+	);
+	const onnxName =
+		exact ??
+		onnxCandidates.find((n) => n.toLowerCase().startsWith(stem.toLowerCase()));
+	if (!onnxName) {
+		return null;
+	}
+	const jsonName = `${onnxName}.json`;
+	if (names.includes(jsonName)) {
+		return { onnx: `${prefix}${onnxName}`, json: `${prefix}${jsonName}` };
+	}
+	const fallbackJson = names.find(
+		(n) =>
+			n.toLowerCase().endsWith(".json") &&
+			n.toLowerCase().startsWith(stem.toLowerCase()),
+	);
+	if (!fallbackJson) {
+		return null;
+	}
+	return { onnx: `${prefix}${onnxName}`, json: `${prefix}${fallbackJson}` };
+}
+
+/**
+ * Resolves mirror download URLs for an entry whose author repo is missing files.
+ *
+ * @param {PiperHubModelEntry} entry - Catalog entry with a failing primary repo.
+ * @returns {Promise<{ onnxUrl: string; jsonUrl: string }>} Mirror download URLs.
+ * @throws {Error} When the voice is not found in the mirror either.
+ */
+export async function piperHubMirrorUrls(entry: PiperHubModelEntry): Promise<{
+	onnxUrl: string;
+	jsonUrl: string;
+}> {
+	const mirrorDir = mirrorDirForRepo(entry.repo);
+	const apiUrl = `https://huggingface.co/api/models/${PIPERHUB_MIRROR_REPO}/tree/main/${mirrorDir}`;
+	const controller = new AbortController();
+	const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+	try {
+		const response = await fetch(apiUrl, { signal: controller.signal });
+		if (!response.ok) {
+			throw new Error(
+				`PiperHub: mirror has no directory for "${entry.repo}" (${response.status}).`,
+			);
+		}
+		const tree = (await response.json()) as { path: string }[];
+		const match = selectMirrorFiles(
+			tree.map((e) => e.path),
+			mirrorDir,
+			entry.onnx.split("/").pop() ?? entry.onnx,
+		);
+		if (!match) {
+			throw new Error(
+				`PiperHub: voice "${entry.slug}" not found in the mirror either.`,
+			);
+		}
+		return {
+			onnxUrl: `https://huggingface.co/${PIPERHUB_MIRROR_REPO}/resolve/main/${match.onnx}`,
+			jsonUrl: `https://huggingface.co/${PIPERHUB_MIRROR_REPO}/resolve/main/${match.json}`,
+		};
+	} finally {
+		clearTimeout(timer);
+	}
+}
+
 /**
  * Lists all PiperHub model slugs.
  *
@@ -214,15 +324,30 @@ export async function getPiperHubModelsByLanguage(
  * Files are cached as `<slug>.onnx` / `<slug>.onnx.json` and skipped when
  * already present and non-empty.
  *
+ * Primary source is the voice's own Hugging Face repo. When it no longer
+ * serves the files, download automatically falls back to the community
+ * mirror (`fox3000foxy/piper-voices-collection`).
+ *
  * @param {string} slugOrRef - Bare slug, `hub:<slug>`, or full piperhub.org page URL.
  * @param {string} modelsDir - Destination directory.
  * @returns {Promise<string>} Absolute path to the local `.onnx` file.
+ * @throws {Error} When the voice is flagged unusable, or when neither the
+ * primary repo nor the mirror serves the files.
  */
 export async function ensurePiperHubModelDownloaded(
 	slugOrRef: string,
 	modelsDir: string,
 ): Promise<string> {
 	const meta = await getPiperHubModelMetadata(slugOrRef);
+	if (meta.usable === false) {
+		throw new Error(
+			`PiperHub: voice "${meta.slug}" is flagged unusable in the catalog` +
+				(meta.piperPlus
+					? " (piper-plus format, needs a forked runtime)"
+					: " (files known broken)") +
+				`. Details: ${meta.pageUrl}`,
+		);
+	}
 	const dir = path.resolve(modelsDir);
 	const targetModelPath = path.join(dir, `${meta.slug}.onnx`);
 	const targetJsonPath = path.join(dir, `${meta.slug}.onnx.json`);
@@ -234,11 +359,30 @@ export async function ensurePiperHubModelDownloaded(
 			return false;
 		}
 	};
-	if (!valid(targetModelPath)) {
-		await downloadToFile(meta.onnxUrl, targetModelPath);
+	const downloadPair = async (
+		onnxUrl: string,
+		jsonUrl: string,
+	): Promise<void> => {
+		if (!valid(targetModelPath)) {
+			await downloadToFile(onnxUrl, targetModelPath);
+		}
+		if (!valid(targetJsonPath)) {
+			await downloadToFile(jsonUrl, targetJsonPath);
+		}
+	};
+	try {
+		await downloadPair(meta.onnxUrl, meta.jsonUrl);
+		return targetModelPath;
+	} catch (primaryError) {
+		if (meta.repo === PIPERHUB_MIRROR_REPO) {
+			throw primaryError;
+		}
+		const mirror = await piperHubMirrorUrls(meta);
+		try {
+			await downloadPair(mirror.onnxUrl, mirror.jsonUrl);
+			return targetModelPath;
+		} catch {
+			throw primaryError;
+		}
 	}
-	if (!valid(targetJsonPath)) {
-		await downloadToFile(meta.jsonUrl, targetJsonPath);
-	}
-	return targetModelPath;
 }

@@ -25,8 +25,11 @@ export {
 	getPiperHubModelMetadata,
 	getPiperHubModelsByLanguage,
 	listPiperHubModels,
+	mirrorDirForRepo,
 	parsePiperHubSlug,
 	piperHubFileUrl,
+	piperHubMirrorUrls,
+	selectMirrorFiles,
 } from "./piperhub.js";
 export type {
 	LengthScale,

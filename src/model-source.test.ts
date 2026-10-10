@@ -5,7 +5,12 @@ import * as os from "node:os";
 import * as path from "node:path";
 import { resolveModelPathFromOptions } from "./catalog.js";
 import { ensureModelUrlDownloaded, resolveModelFiles } from "./model-source.js";
-import { parsePiperHubSlug, piperHubFileUrl } from "./piperhub.js";
+import {
+	mirrorDirForRepo,
+	parsePiperHubSlug,
+	piperHubFileUrl,
+	selectMirrorFiles,
+} from "./piperhub.js";
 
 const ONNX_BYTES = Buffer.from("fake-onnx-bytes");
 const CONFIG_TEXT = '{"audio":{"sample_rate":22050}}';
@@ -162,5 +167,44 @@ describe("piperhub references (offline)", () => {
 		expect(
 			piperHubFileUrl({ ...entry, onnx: "https://example.com/m.onnx" }, "onnx"),
 		).toBe("https://example.com/m.onnx");
+	});
+
+	it("maps repos to mirror dirs", () => {
+		expect(mirrorDirForRepo("simoniz0r/piper-voice-models")).toBe(
+			"simoniz0r--piper-voice-models",
+		);
+	});
+
+	it("selects mirror files despite the double .onnx extension", () => {
+		const dir = "simoniz0r--piper-voice-models";
+		const files = [
+			`${dir}/en_US-bobby-medium.onnx.onnx`,
+			`${dir}/en_US-bobby-medium.onnx.onnx.json`,
+			`${dir}/en_US-carl-medium.onnx.onnx`,
+			`${dir}/en_US-carl-medium.onnx.onnx.json`,
+		];
+		expect(selectMirrorFiles(files, dir, "en_US-carl-medium.onnx")).toEqual({
+			onnx: `${dir}/en_US-carl-medium.onnx.onnx`,
+			json: `${dir}/en_US-carl-medium.onnx.onnx.json`,
+		});
+	});
+
+	it("selects mirror files with a plain single extension", () => {
+		const dir = "owner--repo";
+		const files = [`${dir}/voice-medium.onnx`, `${dir}/voice-medium.onnx.json`];
+		expect(selectMirrorFiles(files, dir, "voice-medium.onnx")).toEqual({
+			onnx: `${dir}/voice-medium.onnx`,
+			json: `${dir}/voice-medium.onnx.json`,
+		});
+	});
+
+	it("returns null when the mirror has no match", () => {
+		expect(
+			selectMirrorFiles(
+				["owner--repo/other.onnx"],
+				"owner--repo",
+				"missing.onnx",
+			),
+		).toBeNull();
 	});
 });
