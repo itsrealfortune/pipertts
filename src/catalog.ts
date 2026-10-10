@@ -110,7 +110,7 @@ function selectModelFiles(entry: PiperVoicesManifestEntry): {
 	return { onnxPath, jsonPath };
 }
 
-async function downloadToFile(
+export async function downloadToFile(
 	url: string,
 	filePath: string,
 	expectedMd5?: string,
@@ -195,7 +195,7 @@ function existingFileLooksValid(
 	}
 }
 
-async function ensureCatalogModelDownloaded(
+export async function ensureCatalogModelDownloaded(
 	modelId: string,
 	modelsDir: string,
 ): Promise<string> {
@@ -329,8 +329,13 @@ export async function getPiperModelMetadata(
 /**
  * Resolves a usable local model path from `PiperTTSOptions`.
  *
- * - Catalog model id: ensures `.onnx` and `.onnx.json` are downloaded.
+ * - Direct `modelUrl`: downloads `.onnx` (+ config) once into `modelsDir`.
+ * - Catalog `model` id: rhasspy id/alias, `hub:<slug>`, piperhub.org page
+ *   URL, or bare PiperHub slug (auto-downloads into `modelsDir`).
  * - `custom`/unset model: uses `modelPath`.
+ *
+ * Delegates to `resolveModelFiles` (see `model-source.ts`); only the
+ * `.onnx` path is returned, the sibling `.onnx.json` lands next to it.
  *
  * @param {PiperTTSOptions} options - Creation options passed to `PiperTTS.create`.
  * @returns {Promise<string>} Absolute path to a local `.onnx` model file.
@@ -339,16 +344,7 @@ export async function getPiperModelMetadata(
 export async function resolveModelPathFromOptions(
 	options: PiperTTSOptions,
 ): Promise<string> {
-	if (options.model && options.model !== PIPER_CUSTOM_MODEL) {
-		const modelsDir = options.modelsDir ?? "models";
-		return ensureCatalogModelDownloaded(options.model, modelsDir);
-	}
-
-	if (!options.modelPath) {
-		throw new Error(
-			"PiperTTS: modelPath is required when model is not set to a catalog id.",
-		);
-	}
-
-	return path.resolve(options.modelPath);
+	const { resolveModelFiles } = await import("./model-source.js");
+	const resolved = await resolveModelFiles(options);
+	return resolved.modelPath;
 }

@@ -42,9 +42,27 @@ export interface NativeAudioChunk {
 	pcm16: Buffer;
 }
 
-/** Load options for PiperNativeTTS: model paths, session reuse, phonemizer data. */
+/** Load options for PiperNativeTTS: model sources, session reuse, phonemizer data. */
 export interface NativeTtsOptions {
-	modelPath: string;
+	/** Local `.onnx` model file path. Takes precedence over `modelUrl` / `model`. */
+	modelPath?: string;
+	/**
+	 * Direct URL to a `.onnx` model file (any host, including Hugging Face).
+	 * Downloaded once into `modelsDir`, then cached.
+	 */
+	modelUrl?: string;
+	/**
+	 * Direct URL to the `.onnx.json` config. Defaults to `<modelUrl>.json`
+	 * (Piper file convention).
+	 */
+	configUrl?: string;
+	/**
+	 * Catalog reference: rhasspy id/alias, `hub:<slug>`, piperhub.org page
+	 * URL, or bare PiperHub slug. Ignored when `modelPath` / `modelUrl` is set.
+	 */
+	model?: string;
+	/** Directory used for downloaded models. Default: `"models"`. */
+	modelsDir?: string;
 	configPath?: string;
 	numThreads?: number;
 	espeakBinary?: string;
@@ -148,11 +166,18 @@ export class PiperNativeTTS {
 	}
 
 	static async load(options: NativeTtsOptions): Promise<PiperNativeTTS> {
-		const modelPath = options.modelPath;
+		const { resolveModelFiles } = await import("../model-source.js");
+		const { modelPath, configPath } = await resolveModelFiles({
+			model: options.model,
+			modelPath: options.modelPath,
+			modelUrl: options.modelUrl,
+			configPath: options.configPath,
+			configUrl: options.configUrl,
+			modelsDir: options.modelsDir,
+		});
 		if (!fs.existsSync(modelPath)) {
 			throw new Error(`PiperNative: model file not found at "${modelPath}".`);
 		}
-		const configPath = options.configPath ?? `${modelPath}.json`;
 		if (!fs.existsSync(configPath)) {
 			throw new Error(`PiperNative: config file not found at "${configPath}".`);
 		}

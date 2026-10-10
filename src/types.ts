@@ -85,12 +85,25 @@ export interface PiperTTSOptions {
 	/** Path to the `.onnx` model when using custom/local mode. */
 	modelPath?: string;
 	/**
+	 * Direct URL to a `.onnx` model file (any host, including Hugging Face).
+	 * Downloaded once into `modelsDir`, then cached. Takes precedence over
+	 * `model`, but not over an explicit local `modelPath`.
+	 */
+	modelUrl?: string;
+	/**
+	 * Direct URL to the `.onnx.json` config. Defaults to `<modelUrl>.json`
+	 * (Piper file convention).
+	 */
+	configUrl?: string;
+	/**
 	 * Model selector.
-	 * - Catalog id: auto-downloads model files into `modelsDir`.
-	 * - `"custom"`: use `modelPath`.
+	 * - Rhasspy catalog id/alias: auto-downloads model files into `modelsDir`.
+	 * - PiperHub voice: `hub:<slug>`, full `piperhub.org/model/<slug>/` page
+	 *   URL, or bare slug (for example, `"hub:glados-french-medium-voice"`).
+	 * - `"custom"`: use `modelPath` / `modelUrl`.
 	 */
 	model?: string;
-	/** Directory used for auto-downloaded catalog models. */
+	/** Directory used for auto-downloaded models (catalog, PiperHub, URL cache). */
 	modelsDir?: string;
 	/** Optional explicit executable path or command name. */
 	piperBinaryPath?: string;
